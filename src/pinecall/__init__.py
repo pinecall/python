@@ -6,6 +6,11 @@ from pinecall._tools import tool as tool
 from pinecall._version import __version__ as __version__
 from pinecall.agent import Agent as Agent
 from pinecall.agent import Logged as Logged
+from pinecall.blocks import Block as Block
+from pinecall.blocks import Blocks as Blocks
+from pinecall.blocks import Line as Line
+from pinecall.blocks import render as render
+from pinecall.blocks import show_prompt as show_prompt
 from pinecall.errors import DeclarationRefused as DeclarationRefused
 from pinecall.errors import NotAStage as NotAStage
 from pinecall.errors import PinecallError as PinecallError
@@ -15,8 +20,11 @@ from pinecall.errors import WireError as WireError
 
 __all__ = [
     "Agent",
+    "Block",
+    "Blocks",
     "Change",
     "DeclarationRefused",
+    "Line",
     "Logged",
     "NotAStage",
     "PinecallError",
@@ -24,6 +32,8 @@ __all__ = [
     "UnauthoredWrite",
     "WireError",
     "__version__",
+    "render",
+    "show_prompt",
     "state",
     "tool",
 ]

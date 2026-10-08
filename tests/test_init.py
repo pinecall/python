@@ -6,8 +6,11 @@ import pinecall
 
 THE_DOOR = [
     "Agent",
+    "Block",
+    "Blocks",
     "Change",
     "DeclarationRefused",
+    "Line",
     "Logged",
     "NotAStage",
     "PinecallError",
@@ -15,6 +18,8 @@ THE_DOOR = [
     "UnauthoredWrite",
     "WireError",
     "__version__",
+    "render",
+    "show_prompt",
     "state",
     "tool",
 ]

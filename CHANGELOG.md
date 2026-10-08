@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `pinecall.render(agent, line)` and `show_prompt`: the prompt as four named blocks in two
+  regions — `identity` (the class's docstring, the framework's rules, the channel's words),
+  `knowledge`, `tools`, then the `view`. The view is a Jinja template, `views/<slug>.jinja` beside
+  the class's file (or `view_template` on the class), with every state field in scope, `call`,
+  `resumed` and `remembers("…")`. `docs/the-view.md`.
 - `Agent.accepts = {"slot.released": ["app"]}`: the outside events an agent takes, and from whom
   (`app`, your backend; `participant`, a browser in the call). A sender that is neither is refused
   when the class is created.

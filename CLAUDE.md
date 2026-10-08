@@ -66,6 +66,8 @@ When a doc and the code disagree, the code is what happened and the doc is the b
 
 - **zsh `noclobber`**: `cmd > file` refuses to overwrite and the old file stays. `>|`.
 - **macOS `sed` has no `\b`**: a word-bounded rename silently does nothing. `perl -pi -e`.
+- **Jinja's `trim_blocks` eats the newline after `{% include %}`**, and an included file loses its
+  last newline unless `keep_trailing_newline` keeps it: two lines run into one.
 - **pydantic is lax by default**: a `set` validates as a JSON list. A test of a refusal uses a
   value JSON cannot carry at all.
 

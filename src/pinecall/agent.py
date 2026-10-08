@@ -51,6 +51,9 @@ class Agent:
     channel_rules: ClassVar[bool] = True
     """`False` leaves the `<channel>` part out of the prompt."""
 
+    view_template: ClassVar[str | None] = None
+    """The view's Jinja, written here; left out, `views/<slug>.jinja` beside the class's file."""
+
     accepts: ClassVar[Mapping[str, Sequence[EventSource]]] = {}
     """The outside events the agent takes, and from whom: `{"slot.released": ["app"]}`."""
 

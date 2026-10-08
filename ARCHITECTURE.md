@@ -41,7 +41,10 @@ src/pinecall/
   _running.py                a tenant's method run under its author: a `def` or an `async def`, from a loop or not
   _accepts.py                the outside events a class accepts, and from whom; what reaches `on_event`
   _searching.py              whether a class searches its bases, read off its own file with `ast`
-docs/                        the pages a person writing an agent reads: README · writing-an-agent
+  _rules.py                  the framework's words: the rules, the protocols, the channel's; word for word TS and Ruby
+  blocks.py                  the prompt as four named blocks in two regions: `Line`, `render`, `show_prompt`
+  _view.py                   the Jinja view beside the class, rendered with the state in scope, tidied
+docs/                        the pages a person writing an agent reads: README · writing-an-agent · the-view
   py.typed                   the package is typed (PEP 561)
   wire/                      the runtime's wire, copied (§4)
     _names.py                the runtime's domain words the wire is written in: Json, Env, Channel, Medium…
@@ -86,6 +89,9 @@ translation; the rows land with the code they describe.
 | a `Promise` per tool call | a thread per tool call | an `async def` tool runs on the loop, a `def` one on a thread (`asyncio.to_thread`), both authored | A blocking CRM call in a tool never blocks the socket; a tenant writes whichever they have. |
 | `static events = { name: { from: [...] } }` | `accepts "name", from: [:app]` | `accepts = {"name": ["app"]}`, a `ClassVar` on `Agent`, merged over the parents' | A class attribute is where Python writes what a class is; the base's `ClassVar` is what pyright reads a subclass's dict against. |
 | `searching.ts`: oxc's AST for `this.knowledge` | `Searching`: Ripper's tokens | `_searching.py`: `ast.walk` for a call of `.search` on `knowledge` or `call` | The standard library parses Python; a word in a string or a comment is not a call. |
+| `render()`, a method returning JSX | an ERB template beside the class, `views/<slug>.erb` | a Jinja template beside the class, `views/<slug>.jinja`, or `view_template` on the class | The same sentence — the object renders itself — in Python's idiom for a page of prose with holes in it. `StrictUndefined` makes a name nobody declared raise, as Ruby's `NameError`; `trim_blocks` and `lstrip_blocks` are ERB's `-%>`. |
+| `this.remembers("…")` inside `render()` | `remembers?("…")` in the template | `remembers("…")` in the template | The same question, in Jinja's punctuation. The view never sees a fact, only the answer. |
+| the channel read off `this.call` | off `call?` | off `Line(channel, medium, claimed)`, passed to `render` | The call is Y5's; until it exists the prompt reads the three things it needs from a value the caller gives. With none, a phone call's. |
 | the wire's `ZodError` | `Wire::WireError` | `WireError`, a `PinecallError` | A frame that does not fit is the package's error like any other; its message says what did not fit. |
 | `toCamel` / `toSnake` | nothing | nothing; `from_` is the one alias (`from` is reserved), as the runtime spells it | The wire is snake_case and so is Python. |
 
