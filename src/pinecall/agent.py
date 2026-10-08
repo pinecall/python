@@ -5,8 +5,10 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import ClassVar, Self
 
-from pinecall import _author, _config, _state
+from pinecall import _author, _config, _state, _tools
 from pinecall._state import Change
+from pinecall.errors import ToolFailed
+from pinecall.wire.parts import ToolSpec
 
 
 @dataclass(frozen=True)
@@ -49,12 +51,16 @@ class Agent:
     """`False` leaves the `<channel>` part out of the prompt."""
 
     _pinecall_fields: ClassVar[_state.Fields] = _state.Fields({}, (), None)
+    _pinecall_tools: ClassVar[dict[str, _tools.Declared]] = {}
 
     def __init_subclass__(cls, **kwargs: object) -> None:
         """Read the class once, as it is created, and refuse what the gateway would refuse."""
         super().__init_subclass__(**kwargs)
         _config.refuse_the_worlds(cls)
         cls._pinecall_fields = _state.fields_of(cls, Agent, cls._pinecall_fields)
+        cls._pinecall_tools = _tools.declared_tools(
+            cls, Agent, cls._pinecall_tools, cls._pinecall_fields.stages
+        )
 
     # ── the state ──
 
@@ -97,6 +103,32 @@ class Agent:
     def collapse(self, summary: str) -> None:
         """Replace the recorded writes with one sentence saying what they came to."""
         _state.collapsed(_state.store_of(self), summary)
+
+    # ── the tools ──
+
+    def tools(self) -> list[ToolSpec]:
+        """Every tool the class declares, as the gateway receives it, seen or not."""
+        return [declared.spec for declared in self._pinecall_tools.values()]
+
+    def visible_tools(self) -> list[ToolSpec]:
+        """The tools the model sees in the state now."""
+        return [
+            declared.spec
+            for declared in self._pinecall_tools.values()
+            if _tools.shows(declared, self)
+        ]
+
+    def run_tool(self, name: str, arguments: Mapping[str, object] | None = None) -> object:
+        """Run a tool as a call does: its arguments checked, its writes authored, its answer cut.
+
+        Args:
+            name: the tool's name.
+            arguments: the object the model sends, by parameter name.
+        """
+        declared = self._pinecall_tools.get(name)
+        if declared is None:
+            raise ToolFailed(f"{name}: this agent declares no such tool")
+        return _tools.ran(self, declared, arguments or {})
 
     # ── the log ──
 

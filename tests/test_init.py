@@ -16,6 +16,7 @@ THE_DOOR = [
     "WireError",
     "__version__",
     "state",
+    "tool",
 ]
 
 

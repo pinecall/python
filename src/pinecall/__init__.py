@@ -2,6 +2,7 @@
 
 from pinecall._state import Change as Change
 from pinecall._state import state as state
+from pinecall._tools import tool as tool
 from pinecall._version import __version__ as __version__
 from pinecall.agent import Agent as Agent
 from pinecall.agent import Logged as Logged
@@ -24,6 +25,7 @@ __all__ = [
     "WireError",
     "__version__",
     "state",
+    "tool",
 ]
 
 

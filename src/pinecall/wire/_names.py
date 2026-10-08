@@ -1,11 +1,18 @@
 """The runtime's words the wire is written in: JSON, the worlds, the channels, a quota."""
 
-from typing import Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, TypeAlias, Union
 
 from typing_extensions import TypeAliasType
 
-# A recursive alias needs a name of its own: pydantic and pyright both read TypeAliasType.
-Json = TypeAliasType("Json", "str | int | float | bool | list[Json] | dict[str, Json] | None")
+# A recursive alias: pyright reads it as written for type checking, pydantic as a TypeAliasType
+# whose self-references are strings, since `|` cannot join a string at runtime.
+if TYPE_CHECKING:
+    Json: TypeAlias = "str | int | float | bool | list[Json] | dict[str, Json] | None"
+else:
+    Json = TypeAliasType(
+        "Json",
+        Union[str, int, float, bool, list["Json"], dict[str, "Json"], None],  # noqa: UP007
+    )
 
 JsonObject: TypeAlias = dict[str, Json]
 
