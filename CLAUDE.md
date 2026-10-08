@@ -47,6 +47,9 @@ When a doc and the code disagree, the code is what happened and the doc is the b
   `tests/serve/test_held.py`, and a test with no module is an orphan.
 - **ruff with every rule, pyright strict, deptry.** A dependency arrives with the first module that
   imports it, never before.
+- **The wire is the runtime's, copied into `src/pinecall/wire/`** (ARCHITECTURE §4) and held to the
+  runtime's golden log by `tests/wire/`. A field this package needs lands in the runtime's wire
+  first, then here by hand; `make drift` names what the copy and `../runtime-v2` disagree on.
 
 ## What a review comes back to
 
@@ -58,6 +61,13 @@ When a doc and the code disagree, the code is what happened and the doc is the b
 - Private modules start with `_`; `pinecall/__init__.py` is the door and names every public thing
   with `X as X` and in `__all__`.
 - Tests read as sentences: `test_a_write_outside_a_tool_is_refused_by_name`.
+
+## Traps
+
+- **zsh `noclobber`**: `cmd > file` refuses to overwrite and the old file stays. `>|`.
+- **macOS `sed` has no `\b`**: a word-bounded rename silently does nothing. `perl -pi -e`.
+- **pydantic is lax by default**: a `set` validates as a JSON list. A test of a refusal uses a
+  value JSON cannot carry at all.
 
 ## Commits
 

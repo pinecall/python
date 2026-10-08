@@ -19,7 +19,10 @@ classifiers = [
   "Typing :: Typed",
 ]
 # Each dependency arrives with the first module that imports it, never before (deptry holds it).
-dependencies = []
+dependencies = [
+    "pydantic>=2.11,<3",
+    "typing-extensions>=4.12,<5",
+]
 
 [project.urls]
 Homepage = "https://pinecall.io"
@@ -75,6 +78,9 @@ ignore = [
   "N818",   # an error is named for what was refused, not with a suffix
   "D105",   # dunder methods: the class docstring says it
   "CPY001", # the LICENSE file is the notice
+  "TC001",  # pydantic reads annotations when a model is built: an import an annotation uses stays one
+  "TC002",
+  "TC003",
 ]
 
 [tool.ruff.lint.pydocstyle]
@@ -84,6 +90,7 @@ convention = "google"
 # A test's name is its sentence; asserts and literal numbers are what a test is made of.
 "tests/**" = ["D103", "INP001", "PLR2004", "S101"]
 "tests/rules/**" = ["S603", "S607"]  # the rules ask git which files the repository holds
+"scripts/**" = ["INP001", "T201"]  # run by path, and they print what they found
 
 [tool.ruff.lint.isort]
 known-first-party = ["pinecall", "tests"]

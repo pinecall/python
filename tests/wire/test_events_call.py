@@ -1,0 +1,30 @@
+"""Tests for a call's own events: a key Python cannot spell, and the state a call opens in."""
+
+from pinecall.wire.events_call import CallStarted
+
+
+def test_an_event_goes_on_the_wire_by_its_wire_keys_and_absent_fields_stay_absent() -> None:
+    started = CallStarted.read(
+        {
+            "channel": "phone",
+            "direction": "inbound",
+            "from": "+1",
+            "to": "+2",
+            "caller": None,
+            "started_at": 1.0,
+        },
+        "call.started",
+    )
+    assert started.written()["from"] == "+1"
+    assert "run" not in started.written()
+
+
+def test_a_call_started_carries_the_state_it_opens_in_only_when_one_was_asked_for() -> None:
+    opened = {"channel": "web", "direction": "inbound", "from": "web_1", "to": "clinica"}
+    golden = CallStarted.read(
+        {**opened, "caller": None, "started_at": 1.0, "state": {"patient_name": "Ana"}},
+        "call.started",
+    )
+    assert golden.written()["state"] == {"patient_name": "Ana"}
+    person = CallStarted.read({**opened, "caller": None, "started_at": 1.0}, "call.started")
+    assert "state" not in person.written()

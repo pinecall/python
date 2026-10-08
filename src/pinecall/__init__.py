@@ -2,8 +2,9 @@
 
 from pinecall._version import __version__ as __version__
 from pinecall.errors import PinecallError as PinecallError
+from pinecall.errors import WireError as WireError
 
-__all__ = ["PinecallError", "__version__"]
+__all__ = ["PinecallError", "WireError", "__version__"]
 
 
 def _owned_by_the_door() -> None:

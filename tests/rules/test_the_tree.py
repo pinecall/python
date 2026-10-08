@@ -61,12 +61,20 @@ def mirror_of(module: Path, package: Path, tests: Path) -> Path:
     return tests / relative.parent / f"test_{module.stem.strip('_')}.py"
 
 
+def says_only_what_it_is(module: Path) -> bool:
+    """Whether a module holds its docstring and nothing else: a package's `__init__.py`, often."""
+    body = ast.parse(module.read_text(encoding="utf-8")).body
+    return len(body) == 1 and ast.get_docstring(ast.Module(body=body, type_ignores=[])) is not None
+
+
 def unmirrored(package: Path, tests: Path) -> list[str]:
-    """Every module with no test of its own."""
+    """Every module with code and no test of its own."""
     return [
         str(module.relative_to(package))
         for module in sorted(package.rglob("*.py"))
-        if module.name not in UNMIRRORED and not mirror_of(module, package, tests).is_file()
+        if module.name not in UNMIRRORED
+        and not says_only_what_it_is(module)
+        and not mirror_of(module, package, tests).is_file()
     ]
 
 
@@ -128,6 +136,8 @@ def test_a_module_with_no_test_and_a_test_with_no_module_are_named(tmp_path: Pat
         tests / "rules" / "test_anything.py",
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("", encoding="utf-8")
+        path.write_text("VALUE = 1\n", encoding="utf-8")
+    (package / "wire").mkdir()
+    (package / "wire" / "__init__.py").write_text('"""The wire."""\n', encoding="utf-8")
     assert unmirrored(package, tests) == ["lonely.py"]
     assert orphans(package, tests) == ["test_orphan.py"]

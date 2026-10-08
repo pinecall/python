@@ -4,7 +4,7 @@ import re
 
 import pinecall
 
-THE_DOOR = ["PinecallError", "__version__"]
+THE_DOOR = ["PinecallError", "WireError", "__version__"]
 
 
 def test_the_door_gives_exactly_the_names_pinned_here() -> None:
@@ -17,6 +17,7 @@ def test_every_name_on_the_door_is_reachable_from_it() -> None:
 
 def test_a_class_on_the_door_is_named_by_the_door_and_not_by_its_module() -> None:
     assert pinecall.PinecallError.__module__ == "pinecall"
+    assert pinecall.WireError.__module__ == "pinecall"
     assert repr(pinecall.PinecallError("x")) == "PinecallError('x')"
 
 
