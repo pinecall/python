@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `@pinecall.panel("Ficha")`: the panel the console draws beside a conversation, a method
+  `(self, who, draw)` that draws the closed catalogue (`panel`, `rows`, `row`, `stat`, `table`,
+  `badge`, `text`) for a `Who`.
 - `pinecall.render(agent, line)` and `show_prompt`: the prompt as four named blocks in two
   regions — `identity` (the class's docstring, the framework's rules, the channel's words),
   `knowledge`, `tools`, then the `view`. The view is a Jinja template, `views/<slug>.jinja` beside

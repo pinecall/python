@@ -10,10 +10,14 @@ from pinecall._author import writing_as
 def called(author: str, method: Callable[..., object], arguments: dict[str, object]) -> object:
     """Run the method to its end with no loop running: an `async def` gets a loop of its own."""
     with writing_as(author):
-        result = method(**arguments)
-        if inspect.isawaitable(result):
-            return asyncio.run(_awaited(result))
-        return result
+        return finished(method(**arguments))
+
+
+def finished(result: object) -> object:
+    """What a method answered, run to its end on a loop of its own when it is a coroutine."""
+    if inspect.isawaitable(result):
+        return asyncio.run(_awaited(result))
+    return result
 
 
 async def run(author: str, method: Callable[..., object], arguments: dict[str, object]) -> object:

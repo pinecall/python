@@ -141,6 +141,45 @@ A tool may be a `def` or an `async def`. In a call, an `async def` runs on the e
 write as the tool. In a test, `agent.run_tool("find_patient", {"name": "Ana", "phone": "600…"})`
 runs either to its end, as a call would.
 
+## The panel beside a conversation: `@panel`
+
+The console draws a pane beside every thread in **Calls**. Without a panel it is what the console
+itself knows — how many conversations there have been with this person, what they came in by, how
+long the agent spent on the line with them. A class that declares a panel has **its own drawn over
+that**, and that is where the business's data goes: the customer's file, their orders, the balance.
+
+```python
+from pinecall import Agent, Drawing, Who, panel
+
+
+class ClinicaNorte(Agent):
+    @panel("Cliente")
+    def ficha(self, who: Who, draw: Drawing) -> None:
+        client = self.crm.find(who.contact)
+        if client is None:
+            with draw.panel("Sin ficha"):
+                draw.text("No está en el CRM.")
+            return
+        with draw.panel(client.name):
+            with draw.rows():
+                draw.row("Alta", client.since)
+                draw.row("Zona", client.area)
+            draw.stat("Servicios", len(client.jobs))
+            draw.table(["fecha", "servicio", "importe"], client.jobs)
+            draw.badge(
+                "con saldo" if client.debt else "al día", tone="warn" if client.debt else "good"
+            )
+```
+
+It is the TypeScript package's `@view`, and what reaches the console is the same: a tree of the
+closed catalogue — `panel`, `rows`, `row`, `stat`, `table`, `badge`, `text` — drawn by the console's
+own parts, in the theme the person reading chose; nothing a tenant writes reaches the page's
+styling, its scripts or its key. `who` is the conversation — `agent`, `contact`, `call` — and nothing
+else: the panel is read beside threads that ended weeks ago, so it fetches what it shows, on an
+instance of its own, never from a call's state. It may be an `async def`. A table's row is a
+sequence in the columns' order or a mapping keyed by them; a number is written whole when it is
+whole, and `None` or a boolean draws nothing. One per class, and a subclass does not inherit it.
+
 ## What is refused when the class is created
 
 Every one of these raises `DeclarationRefused` on the file's import — never in the middle of a
@@ -158,4 +197,6 @@ call, and never as a refusal from a gateway:
 | a tool named like the agent's own method | `a tool named so would hide the agent's own log` |
 | an `accepts` sender that is not `app` or `participant` | `'browser' sends nothing; an event comes from app or participant` |
 | `state(pii=True, visibility="public")` | `a field is pii or public, not both` |
+| two `@panel` methods | `declares two panels (Ficha and Otra); a class draws one panel` |
+| a `@panel` method that does not take `(self, who, draw)` | `a panel draws with (self, who, draw)` |
 | `voice`, `llm`, `stt`, `language`, `greeting`, `hangup`, `says`, `hears`, `memory`, `record`, `knowledge`, `docs` | `` `<field>` is the world's now, not the class's: <verb> — remove it from the class`` |

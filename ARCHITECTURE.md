@@ -44,6 +44,7 @@ src/pinecall/
   _rules.py                  the framework's words: the rules, the protocols, the channel's; word for word TS and Ruby
   blocks.py                  the prompt as four named blocks in two regions: `Line`, `render`, `show_prompt`
   _view.py                   the Jinja view beside the class, rendered with the state in scope, tidied
+  panels.py                  the console's panel beside a conversation: `@panel`, `Who`, `Drawing` and its nodes
 docs/                        the pages a person writing an agent reads: README · writing-an-agent · the-view
   py.typed                   the package is typed (PEP 561)
   wire/                      the runtime's wire, copied (§4)
@@ -92,6 +93,7 @@ translation; the rows land with the code they describe.
 | `render()`, a method returning JSX | an ERB template beside the class, `views/<slug>.erb` | a Jinja template beside the class, `views/<slug>.jinja`, or `view_template` on the class | The same sentence — the object renders itself — in Python's idiom for a page of prose with holes in it. `StrictUndefined` makes a name nobody declared raise, as Ruby's `NameError`; `trim_blocks` and `lstrip_blocks` are ERB's `-%>`. |
 | `this.remembers("…")` inside `render()` | `remembers?("…")` in the template | `remembers("…")` in the template | The same question, in Jinja's punctuation. The view never sees a fact, only the answer. |
 | the channel read off `this.call` | off `call?` | off `Line(channel, medium, claimed)`, passed to `render` | The call is Y5's; until it exists the prompt reads the three things it needs from a value the caller gives. With none, a phone call's. |
+| `@view(CustomerCard)`, JSX rendered to nodes | `panel "Cliente" do \|who\| … end`, drawing on `Panel::Drawing` | `@panel("Cliente")` on a method `(self, who, draw)`; `with draw.panel(…)` nests | A `with` block is Python's way of saying "inside this". The nodes are the same JSON, so the console draws them with the same parts. |
 | the wire's `ZodError` | `Wire::WireError` | `WireError`, a `PinecallError` | A frame that does not fit is the package's error like any other; its message says what did not fit. |
 | `toCamel` / `toSnake` | nothing | nothing; `from_` is the one alias (`from` is reserved), as the runtime spells it | The wire is snake_case and so is Python. |
 

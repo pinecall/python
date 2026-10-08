@@ -17,6 +17,9 @@ from pinecall.errors import PinecallError as PinecallError
 from pinecall.errors import ToolFailed as ToolFailed
 from pinecall.errors import UnauthoredWrite as UnauthoredWrite
 from pinecall.errors import WireError as WireError
+from pinecall.panels import Drawing as Drawing
+from pinecall.panels import Who as Who
+from pinecall.panels import panel as panel
 
 __all__ = [
     "Agent",
@@ -24,14 +27,17 @@ __all__ = [
     "Blocks",
     "Change",
     "DeclarationRefused",
+    "Drawing",
     "Line",
     "Logged",
     "NotAStage",
     "PinecallError",
     "ToolFailed",
     "UnauthoredWrite",
+    "Who",
     "WireError",
     "__version__",
+    "panel",
     "render",
     "show_prompt",
     "state",
