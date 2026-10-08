@@ -1,0 +1,98 @@
+# The Python SDK: the class a tenant writes an agent in, and the entry the one `pinecall` CLI
+# (npm) starts. A library: no executable, no runtime, no vendor.
+
+[project]
+name = "pinecall"
+dynamic = ["version"]
+description = "Write a Pinecall voice or chat agent as a Python class; the pinecall CLI serves it."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Typing :: Typed",
+]
+# Each dependency arrives with the first module that imports it, never before (deptry holds it).
+dependencies = []
+
+[project.urls]
+Homepage = "https://pinecall.io"
+Documentation = "https://docs.pinecall.io"
+Repository = "https://github.com/pinecall/python"
+
+[dependency-groups]
+dev = [
+  "deptry>=0.25,<1",
+  "pyright>=1.1.414,<2",
+  "pytest>=9,<10",
+  "ruff>=0.16,<1",
+]
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+# The version is written once, in the module `pinecall.__version__` reads.
+[tool.hatch.version]
+path = "src/pinecall/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pinecall"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/pinecall", "README.md", "LICENSE", "CHANGELOG.md"]
+
+# ── pytest ──
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--tb=short --strict-markers --strict-config --import-mode=importlib"
+xfail_strict = true
+filterwarnings = ["error"]
+
+# ── the checkers ──
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+  "D203",   # one of each incompatible pair; the Google convention keeps D211 and D212
+  "D213",
+  "COM812", # the formatter owns trailing commas
+  "EM101",  # the sentence a person reads is written where it is raised
+  "EM102",
+  "TRY003",
+  "N818",   # an error is named for what was refused, not with a suffix
+  "D105",   # dunder methods: the class docstring says it
+  "CPY001", # the LICENSE file is the notice
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# A test's name is its sentence; asserts and literal numbers are what a test is made of.
+"tests/**" = ["D103", "INP001", "PLR2004", "S101"]
+"tests/rules/**" = ["S603", "S607"]  # the rules ask git which files the repository holds
+
+[tool.ruff.lint.isort]
+known-first-party = ["pinecall", "tests"]
+
+[tool.pyright]
+include = ["src", "tests"]
+typeCheckingMode = "strict"
+pythonVersion = "3.11"
+reportImplicitOverride = true
+
+[tool.deptry]
+known_first_party = ["pinecall", "tests"]

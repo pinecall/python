@@ -1,0 +1,29 @@
+name: check
+
+# A branch's commits are checked by its pull request; main's, by the push that lands them.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # release.yml runs these as its gates before a wheel reaches PyPI.
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: make check on Python ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The floor a tenant's server may run, and every version above it.
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --locked
+      - run: make check

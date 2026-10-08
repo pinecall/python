@@ -1,0 +1,68 @@
+# A `v*` tag is the publication: `git push origin vX.Y.Z` puts the wheel and the sdist of
+# `pinecall` on PyPI.
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  # A rehearsal that burns no number: guard, gates and build run, publish is skipped (no tag).
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # A PyPI version is permanent: a wheel whose number lies cannot be taken back.
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: the tag and src/pinecall/_version.py say the same number
+        if: github.ref_type == 'tag'
+        run: |
+          declared=$(python3 -c 'import runpy; print(runpy.run_path("src/pinecall/_version.py")["__version__"])')
+          if [ "${GITHUB_REF_NAME#v}" != "$declared" ]; then
+            echo "the tag says ${GITHUB_REF_NAME#v} and _version.py says $declared" >&2
+            exit 1
+          fi
+
+  # A tag matches no `push: branches`, so without this line the release would run no gate at all.
+  gates:
+    uses: ./.github/workflows/check.yml
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          python-version: "3.11"
+      - run: make build
+      # A wheel without the marker installs a package every type checker reads as untyped.
+      - name: the wheel carries py.typed
+        run: unzip -l dist/pinecall-*.whl | grep -q 'pinecall/py.typed'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist
+          path: dist/
+
+  # Trusted Publishing works only in a top-level job: the gates are reused, the publish stays here.
+  publish:
+    needs: [guard, gates, build]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write   # OIDC: no token stored anywhere
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          skip-existing: true   # a workflow run again is not an error
