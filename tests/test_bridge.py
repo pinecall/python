@@ -133,7 +133,7 @@ async def test_a_call_opened_in_a_state_opens_there_over_what_on_call_wrote(
     assert states == [{"state": {"stage": "identify", "patient": "Ana", "note": "de un golden"}}]
 
 
-async def test_a_tool_call_sends_what_moved_its_cause_free_state_and_the_view_alone(
+async def test_a_tool_call_sends_what_moved_and_the_view_before_its_result(
     gateway: FakeGateway, mounted: Mounted
 ) -> None:
     await opened(gateway)
@@ -150,6 +150,8 @@ async def test_a_tool_call_sends_what_moved_its_cause_free_state_and_the_view_al
     assert [data["tools"] for type_, data in after if type_ == "tools.set"] == [[]]
     result = next(data for type_, data in after if type_ == "tool.result")
     assert result["output"] == {"name": "Ana"}
+    # The runtime takes the model's next turn on the result: the prompt must already be there.
+    assert [type_ for type_, _ in after][-1] == "tool.result"
 
 
 async def test_an_accepted_event_runs_on_event_and_its_writes_name_it_as_their_cause(
