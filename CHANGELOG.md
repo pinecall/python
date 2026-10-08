@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `pinecall.bridge.mount(Class, client)`: a class held on a client, an instance of its own per
+  call, opened with `on_call` and the state its opener asked for in one prompt, and from then on
+  only the fields and blocks that changed. `on_memory` is called when memory is read or written.
 - `self.call`, a `CallWorld`: the call's line, room and turns, and a verb per command — `say`,
   `reply`, `send`, `participant(…).mute()`, `invite`, `transfer`, `attention`, `hold`, `unhold`,
   `dtmf`, `claim`, `callback`, `opt_out`, `hangup`, `search`. A verb that waits answers with an

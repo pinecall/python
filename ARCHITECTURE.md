@@ -54,6 +54,7 @@ src/pinecall/
   call.py                    `CallWorld`: the call's line, room and turns, a verb per command; `Line`, `CallLine`
   _answers.py                what a verb that waits answers: `Answer`, settled by its entry, its ceiling, or the end
   _room.py                   who is in the room, a seat's two verbs, the turns
+  bridge.py                  `mount`: one instance per call, its jobs in order, the state and only the blocks that moved
   observe.py                 reading a log: one page (`history`), or the stream from a cursor on (`observe`)
 docs/                        the pages a person writing an agent reads: README · writing-an-agent · the-view
   py.typed                   the package is typed (PEP 561)
@@ -114,6 +115,8 @@ translation; the rows land with the code they describe.
 | a `Promise` per waiting verb | a `Thread::Queue` per waiting verb, popped with a ceiling | an `Answer`: a `concurrent.futures.Future` an `async def` awaits and a `def` waits for with `.result()` | A tool is either, and the same verb must serve both; the future is thread-safe and the loop settles it. |
 | `this.call`, set by the bridge | `call`, a method that raises outside a call | `call`, a property that raises outside one; `serving(call)` hands it | It never reads as a field, and a test hands an instance its call in one line. |
 | the hooks, `async` | `on_call`, `on_end`, `on_event`, `on_memory` | the same four, each a `def` or an `async def`, under `hook:<name>` | A hook that reads your CRM may well be async; one that writes two fields need not be. |
+| `inOrder`, a promise chain per call | a thread per call running its jobs | an `asyncio.Queue` per call and one task draining it | The opening, an outside event and the end of one call never overlap, which is what makes `call.cause` mean anything. Tool calls are not queued: they run side by side, as in both. |
+| `onMemory`, declared and never called | `on_memory`, declared and never called | `on_memory(ops, call)`, called after a `memory.ops` re-renders the view | The hook says what it is for; here it is. |
 | the wire's `ZodError` | `Wire::WireError` | `WireError`, a `PinecallError` | A frame that does not fit is the package's error like any other; its message says what did not fit. |
 | `toCamel` / `toSnake` | nothing | nothing; `from_` is the one alias (`from` is reserved), as the runtime spells it | The wire is snake_case and so is Python. |
 
@@ -167,7 +170,40 @@ It knows the wire, `websockets` and `httpx`.
   stop from the org (`error` coded `stopped`, for no agent) closes the socket for good and goes
   to `on_stopped`; `on_entries` hands over every entry as the gateway wrote it.
 
-## 6. Packaging
+## 6. The bridge, step by step
+
+`mount(Class, client, slug=…, takes_unclaimed=…, last=…)`, the only module that knows both the
+class and the socket.
+
+1. **At mount** — the class's tools and its declaration (the layout, `uses_knowledge`, the
+   fields' visibility, the events it accepts, the panel's name) go to `client.agent`. Nothing is
+   sent until `connect`.
+2. **`call.started`** → a fresh instance, sealed, handed its `CallWorld`; every job of the call
+   runs one at a time on a task of its own. `on_call` runs; `call.started.state` — the state a
+   golden, a persona or `?state=` asked for — is applied after the hook so it is not overwritten,
+   and before the first render so the model never reads a state the call was not in.
+3. **The opening send** — one `state.set`, then `prompt.set` for each block that says something,
+   then `tools.set`. Only then does the bridge follow the instance, so a hook writing five fields
+   is one prompt and not five.
+4. **On every write** — `state.set` with the field that moved; when an outside event caused it,
+   a `state.cause` line naming it; then the sync.
+5. **The sync** renders every block and compares each with what this call was last sent:
+   `prompt.set` only for a block whose text differs (a block never sent counts as empty),
+   `tools.set` only when the visible list differs. A tool's thread and the loop both sync, under
+   one lock.
+6. **A tool call** runs on the instance serving that call — an `async def` on the loop, a `def`
+   on a thread — and its answer is made JSON; a call no longer served answers with an error.
+7. **An outside event** reaches `on_event` only from a sender the class accepts, one at a time,
+   in order, its writes authored `event:<name>`. **The view again** on the caller's turn, on
+   `call.claimed`, and on `memory.ops`, whose recalled facts are what `remembers` answers from;
+   the ops then go to `on_memory`.
+8. **`call.ended`** → nothing renders for the call any more; `on_end` runs with the log still
+   open, so a farewell line lands.
+9. **`call.attached`** → a call handed to this process mid-conversation: an instance restored to
+   the state the gateway kept, no `on_call`, the whole prompt sent. A call already served here
+   keeps its instance and sends its whole prompt again.
+
+## 7. Packaging
 
 - **A library, no executable.** The verbs are the one `pinecall` CLI's (npm); it starts
   `python -m pinecall.serve`.
