@@ -20,9 +20,11 @@ classifiers = [
 ]
 # Each dependency arrives with the first module that imports it, never before (deptry holds it).
 dependencies = [
+    "httpx>=0.28,<1",
     "jinja2>=3.1,<4",
     "pydantic>=2.11,<3",
     "typing-extensions>=4.12,<5",
+    "websockets>=15,<17",
 ]
 
 [project.urls]
@@ -32,9 +34,12 @@ Repository = "https://github.com/pinecall/python"
 
 [dependency-groups]
 dev = [
+  "aiohttp>=3.12,<4",
   "deptry>=0.25,<1",
   "pyright>=1.1.414,<2",
   "pytest>=9,<10",
+  "pytest-asyncio>=1.4,<2",
+  "pytest-timeout>=2.4,<3",
   "ruff>=0.16,<1",
 ]
 
@@ -59,6 +64,10 @@ testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "--tb=short --strict-markers --strict-config --import-mode=importlib"
 xfail_strict = true
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+# A socket that never answers fails its test instead of hanging the suite.
+timeout = 30
 filterwarnings = ["error"]
 
 # ── the checkers ──
@@ -89,7 +98,8 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 # A test's name is its sentence; asserts and literal numbers are what a test is made of.
-"tests/**" = ["D103", "INP001", "PLR2004", "S101"]
+# A stand-in takes what the real one is given, and may not read it.
+"tests/**" = ["ARG001", "ARG005", "D103", "INP001", "PLR2004", "S101"]
 "tests/rules/**" = ["S603", "S607"]  # the rules ask git which files the repository holds
 "scripts/**" = ["INP001", "T201"]  # run by path, and they print what they found
 

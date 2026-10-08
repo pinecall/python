@@ -17,7 +17,7 @@ WRITTEN_BY_A_TOOL = {"uv.lock": "uv writes it"}
 UNMIRRORED = {"_version.py": "one constant, read by the build and pinned by tests/test_init.py"}
 
 # Suites that mirror no module.
-NOT_A_MIRROR = {"rules"}
+NOT_A_MIRROR = {"rules", "fakes"}
 
 
 def tracked(root: Path) -> list[Path]:

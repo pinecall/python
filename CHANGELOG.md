@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `pinecall.Client(url, api_key, env)`: one socket to the gateway and the agents held on it —
+  registered and declared again on every reconnect, each tool call answered with exactly one
+  result, `drain()` to leave without cutting a call, `search(call, query, k)` for a call this
+  process serves. It reads nothing from the environment.
 - `@pinecall.panel("Ficha")`: the panel the console draws beside a conversation, a method
   `(self, who, draw)` that draws the closed catalogue (`panel`, `rows`, `row`, `stat`, `table`,
   `badge`, `text`) for a `Who`.

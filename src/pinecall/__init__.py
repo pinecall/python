@@ -11,9 +11,13 @@ from pinecall.blocks import Blocks as Blocks
 from pinecall.blocks import Line as Line
 from pinecall.blocks import render as render
 from pinecall.blocks import show_prompt as show_prompt
+from pinecall.client import Client as Client
 from pinecall.errors import DeclarationRefused as DeclarationRefused
+from pinecall.errors import DevRefused as DevRefused
 from pinecall.errors import NotAStage as NotAStage
+from pinecall.errors import NotConnected as NotConnected
 from pinecall.errors import PinecallError as PinecallError
+from pinecall.errors import Refused as Refused
 from pinecall.errors import ToolFailed as ToolFailed
 from pinecall.errors import UnauthoredWrite as UnauthoredWrite
 from pinecall.errors import WireError as WireError
@@ -26,12 +30,16 @@ __all__ = [
     "Block",
     "Blocks",
     "Change",
+    "Client",
     "DeclarationRefused",
+    "DevRefused",
     "Drawing",
     "Line",
     "Logged",
     "NotAStage",
+    "NotConnected",
     "PinecallError",
+    "Refused",
     "ToolFailed",
     "UnauthoredWrite",
     "Who",

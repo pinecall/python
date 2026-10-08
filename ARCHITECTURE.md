@@ -45,6 +45,12 @@ src/pinecall/
   blocks.py                  the prompt as four named blocks in two regions: `Line`, `render`, `show_prompt`
   _view.py                   the Jinja view beside the class, rendered with the state in scope, tidied
   panels.py                  the console's panel beside a conversation: `@panel`, `Who`, `Drawing` and its nodes
+  client.py                  `Client`: one socket, the agents on it, drain, the stop, `search` for a call
+  _connection.py             the socket: the key at the door, full-jitter backoff, a ping, 1008 not retried, frames in order
+  _agent_socket.py           one agent on the socket: register then configure, one tool.result per tool.call, dev asks
+  _calls.py                  one live call as the app holds it, and the book of them
+  _listeners.py              who is listening for what; a listener's failure said, never raised
+  _endpoints.py              the gateway's doors from one base URL, and the key as a Bearer header
 docs/                        the pages a person writing an agent reads: README · writing-an-agent · the-view
   py.typed                   the package is typed (PEP 561)
   wire/                      the runtime's wire, copied (§4)
@@ -63,6 +69,7 @@ tests/                       mirrors src/ one to one
   test_init.py               the door, pinned by name
   rules/test_the_tree.py     the ceiling, the opening line of every module, the mirror
   wire/golden/call-log.json  the runtime's golden call log, shared with the TypeScript and Ruby packages
+  fakes/gateway.py           a gateway that is not there: a real socket and lookup door on 127.0.0.1 (aiohttp)
 scripts/wire_drift.py        `make drift`: what the runtime's wire says that this copy does not
 ```
 
@@ -94,6 +101,10 @@ translation; the rows land with the code they describe.
 | `this.remembers("…")` inside `render()` | `remembers?("…")` in the template | `remembers("…")` in the template | The same question, in Jinja's punctuation. The view never sees a fact, only the answer. |
 | the channel read off `this.call` | off `call?` | off `Line(channel, medium, claimed)`, passed to `render` | The call is Y5's; until it exists the prompt reads the three things it needs from a value the caller gives. With none, a phone call's. |
 | `@view(CustomerCard)`, JSX rendered to nodes | `panel "Cliente" do \|who\| … end`, drawing on `Panel::Drawing` | `@panel("Cliente")` on a method `(self, who, draw)`; `with draw.panel(…)` nests | A `with` block is Python's way of saying "inside this". The nodes are the same JSON, so the console draws them with the same parts. |
+| `Promise`, one event loop; `ws` | one reader thread, a thread per call and per tool; `websocket-driver` | asyncio: a reader task, a task per tool call and per ask, one writer task; `websockets` | One loop, as TS. Frames leave through one queue so their order is the order they were sent in, and a tool's thread sends through `call_soon_threadsafe`. |
+| `#ask` and a `Promise` settled by the entry | `ask` and a `Thread::Queue`, the declaration on its own thread | `_ask` and a `Future`, the declaration awaited from the dialling task | A task waiting for an entry must not be the task reading them. |
+| `fetch` for the lookup door | `Client::Rest` | `httpx` | Anthropic's SDK's choice for HTTP; one request per search. |
+| `FakeGateway` (`src/client/testing/gateway.ts`) | `test/client/fake_gateway.rb` | `tests/fakes/gateway.py`, on aiohttp | A real socket, a real handshake, a real POST: the client is tested as it runs. aiohttp is a dev dependency only. |
 | the wire's `ZodError` | `Wire::WireError` | `WireError`, a `PinecallError` | A frame that does not fit is the package's error like any other; its message says what did not fit. |
 | `toCamel` / `toSnake` | nothing | nothing; `from_` is the one alias (`from` is reserved), as the runtime spells it | The wire is snake_case and so is Python. |
 
@@ -117,7 +128,28 @@ fields with their types and defaults, every alias, every registry key — and na
 it needs `../runtime-v2`, so it is not part of `check`. `tests/wire/golden/call-log.json` is the
 runtime's golden log, and every entry of it reads as the model its type names.
 
-## 5. Packaging
+## 5. `Client` — the socket alone
+
+A second, smaller door for an app with its own way of deciding what to answer: no class, no view.
+It knows the wire, `websockets` and `httpx`.
+
+- **Registration is memory, not a database.** `open` runs again on every reconnect. Many sockets
+  may hold one agent; a call that names no app goes to the newest that takes unclaimed calls,
+  which is what makes a rolling deploy work. A console's companion registers with
+  `answers_dev=True` and declares nothing: a registration inherits the newest holder's
+  declaration, and one sent from there would replace it.
+- **Three commands are awaited** — `agent.register`, `agent.configure`, `agent.drain` — each by the
+  entry it lands as, or by an `error` carrying its id (`<slug>:<type>`), within 10 s. Everything
+  else is sent and read back from the log.
+- **The key travels as `Authorization: Bearer`**, never in a URL; `env` rides `pinecall-env`.
+- **It reads nothing from the environment.** `Client(url, api_key, env)` is given all three.
+- **Every tool call gets exactly one `tool.result`** — an unknown tool and a tool that raised
+  included — and every `dev.request` one `dev.answer`: a turn or an ask with no answer waits forever.
+- **Leaving.** `drain` asks every agent to drain and waits for the tools running, up to 30 s; a
+  stop from the org (`error` coded `stopped`, for no agent) closes the socket for good and goes
+  to `on_stopped`; `on_entries` hands over every entry as the gateway wrote it.
+
+## 6. Packaging
 
 - **A library, no executable.** The verbs are the one `pinecall` CLI's (npm); it starts
   `python -m pinecall.serve`.

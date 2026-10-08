@@ -34,3 +34,26 @@ class NotAStage(PinecallError):
 
 class ToolFailed(PinecallError):
     """A tool could not run; the message goes back to the model as the tool's error."""
+
+
+class Refused(PinecallError):
+    """The gateway refused: an `error` entry naming a command, or a REST door's answer."""
+
+    def __init__(self, code: str, message: str) -> None:
+        """Keep the gateway's code and its own sentence."""
+        super().__init__(f"{code}: {message}")
+        self.code = code
+
+
+class DevRefused(PinecallError):
+    """A console's ask refused with an HTTP status and a sentence the console shows as it is."""
+
+    def __init__(self, status: int, detail: str) -> None:
+        """Keep the status and the sentence."""
+        super().__init__(f"{status}: {detail}")
+        self.status = status
+        self.detail = detail
+
+
+class NotConnected(PinecallError):
+    """The gateway is not reachable, refused the socket, or did not answer in time."""
