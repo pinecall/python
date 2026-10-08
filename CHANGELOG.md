@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- A frame sent from the loop could leave before frames a tool's thread had sent just before it.
+  Every frame now leaves in the order it was sent, from any thread.
 - `docs/tutorial.md`: forty minutes from an empty directory to an agent that answers from your
   documents and remembers who called. The README says what the package is and how to install it
   from git until its first release.

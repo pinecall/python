@@ -6,6 +6,7 @@ import logging
 import random
 import threading
 import time
+from collections import deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
@@ -68,9 +69,7 @@ class Connection:
         self._ping_s = ping_s
         self._backoff = backoff
         self._socket: ClientConnection | None = None
-        self._outbox: asyncio.Queue[str] | None = None
-        self._loop: asyncio.AbstractEventLoop | None = None
-        self._thread: int | None = None
+        self._outbox: Outbox | None = None
         self._tasks: set[asyncio.Task[None]] = set()
         self._closed = False
 
@@ -82,20 +81,15 @@ class Connection:
     async def start(self) -> None:
         """Dial and run `on_open`; a failure here is raised. Later drops are dialled again."""
         self._closed = False
-        self._loop = asyncio.get_running_loop()
-        self._thread = threading.get_ident()
         socket = await self._dial()
         self._spawn(self._kept(socket))
 
     def send(self, text: str) -> None:
         """Queue one frame; frames leave in the order they were sent, from any thread."""
-        outbox, loop = self._outbox, self._loop
-        if outbox is None or loop is None:
+        outbox = self._outbox
+        if outbox is None:
             raise NotConnected("the gateway is not connected")
-        if threading.get_ident() == self._thread:
-            outbox.put_nowait(text)
-        else:
-            loop.call_soon_threadsafe(outbox.put_nowait, text)
+        outbox.put(text)
 
     def leaving(self) -> None:
         """Keep this socket and never dial again: a drain must not take back the calls it gave."""
@@ -126,7 +120,7 @@ class Connection:
             ) from refused
         except (OSError, InvalidHandshake, TimeoutError) as failed:
             raise NotConnected(f"the gateway is not reachable at {self._url}: {failed}") from failed
-        self._socket, self._outbox = socket, asyncio.Queue()
+        self._socket, self._outbox = socket, Outbox(asyncio.get_running_loop())
         self._spawn(self._read(socket))
         self._spawn(self._write(socket, self._outbox))
         # The declaration waits for entries the reader hands over: it runs here, never there. A
@@ -195,7 +189,7 @@ class Connection:
                 except Exception as failed:  # noqa: BLE001 - one entry's failure never stops the reader
                     self._handlers.on_error(failed)
 
-    async def _write(self, socket: ClientConnection, outbox: asyncio.Queue[str]) -> None:
+    async def _write(self, socket: ClientConnection, outbox: "Outbox") -> None:
         with contextlib.suppress(ConnectionClosed):
             while True:
                 await socket.send(await outbox.get())
@@ -210,3 +204,33 @@ class Connection:
         task = asyncio.ensure_future(work)
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
+
+
+class Outbox:
+    """The frames waiting for the socket, in the order `put` was called from any thread."""
+
+    # One deque both sides append to: an append is atomic, so the order is the order of the calls.
+    # Only the wake-up crosses to the loop; a frame handed over through `call_soon_threadsafe`
+    # would be overtaken by one the loop puts directly before that callback runs.
+    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+        """An empty outbox whose reader runs on `loop`."""
+        self._frames: deque[str] = deque()
+        self._loop = loop
+        self._thread = threading.get_ident()
+        self._wake = asyncio.Event()
+
+    def put(self, text: str) -> None:
+        """Queue one frame, from any thread."""
+        self._frames.append(text)
+        if threading.get_ident() == self._thread:
+            self._wake.set()
+        else:
+            self._loop.call_soon_threadsafe(self._wake.set)
+
+    async def get(self) -> str:
+        """The oldest frame, once there is one."""
+        while not self._frames:
+            self._wake.clear()
+            if not self._frames:
+                await self._wake.wait()
+        return self._frames.popleft()
