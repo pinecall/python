@@ -82,10 +82,13 @@ docs/                        the pages a person writing an agent reads: README Â
 tests/                       mirrors src/ one to one
   test_init.py               the door, pinned by name
   rules/test_the_tree.py     the ceiling, the opening line of every module, the mirror
+  rules/test_the_wire.py     every command sent by one module or nobody's, every event folded or ignored with a reason
   wire/golden/call-log.json  the runtime's golden call log, shared with the TypeScript and Ruby packages
   fakes/project.py           a project of one agent written into a folder, as the CLI lays one out
   fakes/gateway.py           a gateway that is not there: a real socket, the lookup and log doors on 127.0.0.1
   wire/entries.py            entries of one made-up call, for the reducer's tests
+examples/clinica_norte/      the TypeScript and Ruby example in Python, in the CLI's layout: its agenda, its Jinja view,
+                             its ring-0 suite (`make examples`, part of check) and the same eleven goldens (`make ring1`)
 scripts/wire_drift.py        `make drift`: what the runtime's wire says that this copy does not
 ```
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `pinecall.testing.load(file)`: an agent's class loaded as `pinecall start` loads it, its folder a
+  package, for a test whose agent lives in a folder named by its slug.
+- `examples/clinica_norte`: the TypeScript and Ruby example, in Python.
 - `python -m pinecall.serve start|prompt`: the entry the one `pinecall` CLI starts a Python agent
   with. `pinecall.hold(Class, url=, api_key=)` holds one from a process of your own.
 - `pinecall.testing.Gateway`: ring 0 — a class held as a call holds it, from a plain test, with no

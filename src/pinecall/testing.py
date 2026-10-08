@@ -4,6 +4,7 @@ import asyncio
 import itertools
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from types import TracebackType
 from typing import Self, cast
 
@@ -13,6 +14,7 @@ from pinecall.agent import Agent, LastCall
 from pinecall.bridge import Mounted, mount
 from pinecall.client import Client, Found
 from pinecall.errors import PinecallError, WireError
+from pinecall.serve._loading import Served, load_served
 from pinecall.wire._names import Channel, Json, JsonObject, Medium
 from pinecall.wire.commands import COMMANDS
 from pinecall.wire.events import EPHEMERAL_EVENTS
@@ -20,6 +22,20 @@ from pinecall.wire.frames import Entry, WireModel
 
 QUIET_ROUNDS = 3
 ROUND_S = 0.005
+
+
+def load(file: str | Path) -> type[Agent]:
+    """The class an agent file defines, loaded as `pinecall start` loads it: its folder a package.
+
+    ```python
+    ClinicaNorte = load(Path(__file__).parents[2] / "agents" / "clinica-norte" / "agent.py")
+    ```
+
+    A folder named `clinica-norte` cannot be imported, and the class imports its own modules
+    relatively; this loads it the one way that serves both, its slug the folder's.
+    """
+    path = Path(file)
+    return load_served(Served(path, path.resolve().parent.name))
 
 
 @dataclass(frozen=True)

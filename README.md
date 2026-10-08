@@ -14,7 +14,8 @@ uv sync
 make check
 ```
 
-How the package is built, file by file, is [ARCHITECTURE.md](ARCHITECTURE.md).
+How the package is built, file by file, is [ARCHITECTURE.md](ARCHITECTURE.md). A whole agent,
+written the way a customer writes one, is [examples/clinica_norte](examples/clinica_norte).
 
 ## License
 

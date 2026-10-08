@@ -100,6 +100,12 @@ convention = "google"
 # A test's name is its sentence; asserts and literal numbers are what a test is made of.
 # A stand-in takes what the real one is given, and may not read it.
 "tests/**" = ["ARG001", "ARG002", "ARG005", "D103", "INP001", "PLR2004", "S101"]
+# The example is a tenant's project: its folders are named by their slugs, and it is no package.
+"examples/**" = ["INP001"]
+# A tool's docstring is the prompt the model reads, a paragraph of the tenant's prose: the same
+# words, line for line, as the TypeScript and Ruby examples, so the three prompts are one.
+"examples/**/agents/**" = ["D205", "E501"]
+"examples/**/test/**" = ["ARG001", "ARG005", "D103", "INP001", "PLR2004", "S101", "ANN401"]
 "tests/rules/**" = ["S603", "S607"]  # the rules ask git which files the repository holds
 "tests/serve/test_main.py" = ["S603"]  # it runs the entry the way the CLI does: this interpreter
 "scripts/**" = ["INP001", "T201"]
@@ -110,7 +116,7 @@ convention = "google"
 known-first-party = ["pinecall", "tests"]
 
 [tool.pyright]
-include = ["src", "tests"]
+include = ["src", "tests", "examples"]
 typeCheckingMode = "strict"
 pythonVersion = "3.11"
 reportImplicitOverride = true
