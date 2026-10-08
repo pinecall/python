@@ -40,7 +40,7 @@ async def start(
     """Hold every agent named until a reason to leave arrives on `asked`; 0 once they left."""
     client = client_from(env, prod=flags.prod)
     classes = [(served.slug, load_served(served)) for served in flags.served]
-    said(client, out, err, events=flags.events)
+    printer = said(client, out, err, events=flags.events)
     mounted: list[Mounted] = []
     for slug, cls in classes:
         held = mount(cls, client, slug=slug, takes_unclaimed=not flags.console)
@@ -58,8 +58,11 @@ async def start(
         asked.put_nowait(STOPPED)
 
     client.on_stopped(stopped)
-    await client.connect()
-    return await leave(Held(client, mounted), asked, err)
+    try:
+        await client.connect()
+        return await leave(Held(client, mounted), asked, err)
+    finally:
+        printer.close()
 
 
 async def leave(held: Held, asked: asyncio.Queue[str], err: TextIO) -> int:

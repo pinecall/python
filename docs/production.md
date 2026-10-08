@@ -57,6 +57,11 @@ are let finish, up to 30 seconds; one line on stderr says where the calls went. 
 `--kill-timeout 45000`. A second signal leaves at once, and so does the end of its stdin: the CLI
 that started it is gone.
 
+A refusal at start — the file cannot be served, the class is refused, the gateway will not take
+the slug or the key — is one sentence on stderr and exit status 2, so a supervisor that restarts
+on failure does not loop on it silently. `PINECALL_LOG=debug` writes the package's own log to
+stderr, each line timed: when a call opened, and every entry read with how late it arrived.
+
 What the agent searches is pushed before the deploy, not with it: `pinecall docs push --prod`.
 
 ## Not hosted by Pinecall yet

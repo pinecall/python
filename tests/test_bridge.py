@@ -104,22 +104,24 @@ async def test_the_class_is_declared_by_its_layout_its_tools_and_the_events_it_a
     }
 
 
-async def test_a_call_opens_with_one_state_one_prompt_per_block_that_says_something_and_the_tools(
+async def test_a_call_opens_with_its_prompt_and_tools_first_and_then_one_state(
     gateway: FakeGateway, mounted: Mounted
 ) -> None:
     await opened(gateway)
+    await gateway.until(lambda: any(type_ == "state.set" for type_, _ in sent(gateway)))
     commands = sent(gateway)
+    # The prompt first: a state with a pii field is sealed before the gateway reads what follows.
     assert [type_ for type_, _ in commands] == [
-        "state.set",
         "prompt.set",
         "prompt.set",
         "prompt.set",
         "tools.set",
+        "state.set",
     ]
-    assert commands[0][1] == {"state": {"stage": "identify", "patient": None, "note": "abierta"}}
-    assert [data["name"] for _, data in commands[1:4]] == ["identity", "tools", "view"]
-    assert commands[3][1]["text"] == "Pide el nombre."
-    assert "You are in a written chat on a website." in str(commands[1][1]["text"])
+    assert [data["name"] for _, data in commands[0:3]] == ["identity", "tools", "view"]
+    assert commands[2][1]["text"] == "Pide el nombre."
+    assert "You are in a written chat on a website." in str(commands[0][1]["text"])
+    assert commands[4][1] == {"state": {"stage": "identify", "patient": None, "note": "abierta"}}
     assert mounted.instance_of("CA_1") is not None
 
 

@@ -2,8 +2,10 @@
 
 import asyncio
 import contextlib
+import logging
 import random
 import threading
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
@@ -20,6 +22,8 @@ from pinecall.wire.frames import Entry
 POLICY_VIOLATION = 1008
 
 OPEN_WITHIN_S = 10.0
+
+logger = logging.getLogger("pinecall")
 
 
 @dataclass(frozen=True)
@@ -180,6 +184,12 @@ class Connection:
                 except WireError as unreadable:
                     self._handlers.on_error(unreadable)
                     continue
+                logger.debug(
+                    "in  %s %s, %.0f ms after it was written",
+                    entry.type,
+                    entry.call,
+                    (time.time() - entry.ts) * 1000,
+                )
                 try:
                     self._handlers.on_entry(entry)
                 except Exception as failed:  # noqa: BLE001 - one entry's failure never stops the reader

@@ -8,3 +8,5 @@ __pycache__/
 .ruff_cache/
 dist/
 .DS_Store
+# What `pinecall test` writes beside the agent while it runs.
+.pinecall/

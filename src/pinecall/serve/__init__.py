@@ -1,6 +1,7 @@
 """The entry the one `pinecall` CLI starts a Python agent with, and `hold` for your own process."""
 
 import asyncio
+import logging
 import os
 import signal
 import sys
@@ -11,7 +12,7 @@ from typing import TextIO
 from pinecall.agent import Agent, LastCall
 from pinecall.bridge import mount
 from pinecall.client import Client
-from pinecall.errors import DeclarationRefused, NotConnected
+from pinecall.errors import DeclarationRefused, NotConnected, Refused
 from pinecall.serve._held import Held
 from pinecall.serve._loading import CannotServe, parse
 from pinecall.serve._prompting import prompt
@@ -39,16 +40,28 @@ def main(
     on SIGINT, SIGTERM or the end of its stdin, draining first; a second signal leaves now.
     """
     verb, rest = (argv[0], argv[1:]) if argv else ("", [])
+    logged(env.get("PINECALL_LOG"))
     try:
         if verb == "prompt":
             return prompt(parse(rest), out)
         if verb == "start":
             return asyncio.run(started(rest, out, err, env))
-    except (CannotServe, DeclarationRefused, NotConnected) as refused:
+    # A gateway that refuses the registration (a slug of another org, a key it does not take) is a
+    # sentence for the person who ran it, not a traceback.
+    except (CannotServe, DeclarationRefused, NotConnected, Refused) as refused:
         err.write(f"{refused}\n")
         return 2
     err.write(USAGE)
     return 2
+
+
+def logged(level: str | None) -> None:
+    """`PINECALL_LOG=debug` or `info`: the package's own log on stderr, each line timed."""
+    if level in ("debug", "info"):
+        logging.basicConfig(
+            format="%(asctime)s.%(msecs)03d %(name)s %(message)s", datefmt="%H:%M:%S"
+        )
+        logging.getLogger("pinecall").setLevel(level.upper())
 
 
 async def started(argv: list[str], out: TextIO, err: TextIO, env: Mapping[str, str]) -> int:

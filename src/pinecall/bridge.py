@@ -204,11 +204,15 @@ async def work(served: Live) -> None:
 # first render, so the model never reads a state the call was not in; one prompt, not one per field.
 async def opening(served: Live, state: JsonObject | None) -> None:
     """Run `on_call`, open in the state asked for, send it all, then follow every change."""
+    logger.debug("%s: opening", served.call.id)
     await _running.run("hook:on_call", served.agent.on_call, served.world)
     if state:
         served.agent.start_in(state)
-    served.call.set_state(jsonable(served.agent.snapshot()))
+    # The prompt before the state: the caller's first turn needs the prompt, only the log reads
+    # the state, and a state with a pii field is sealed before the gateway reads the next command.
     synced(served)
+    served.call.set_state(jsonable(served.agent.snapshot()))
+    logger.debug("%s: opened", served.call.id)
     follow(served)
 
 
@@ -258,7 +262,10 @@ def follow(served: Live) -> None:
         if isinstance(event, EventReceived):
             received(served, event)
         elif isinstance(event, MemoryOps):
+            # Now, not queued: the runtime holds the model's turn while the recall runs, and the
+            # view must say what the answer changes before that turn is taken.
             served.remembered = recalled(event)
+            synced(served)
             served.jobs.put_nowait(lambda: remembered(served, event))
         # The view answers the turn being taken; a claim lets the caller see the page.
         if type_ in ("turn.user", "call.claimed"):
@@ -272,8 +279,7 @@ def follow(served: Live) -> None:
 
 
 async def remembered(served: Live, ops: MemoryOps) -> None:
-    """What memory brought is not state: render again, then hand the ops to `on_memory`."""
-    synced(served)
+    """Hand what memory read or wrote to `on_memory`, after the view already says it."""
     await _running.run("hook:on_memory", served.agent.on_memory, list(ops.ops), served.world)
 
 

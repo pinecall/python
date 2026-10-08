@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `python -m pinecall.serve`: `PINECALL_LOG=debug` writes the package's log to stderr, timed; a
+  gateway that refuses the registration is one sentence and exit 2, not a traceback.
+- A call opens with its prompt before its state, and what memory recalled reaches the view as the
+  recall lands, not behind the job running: the caller's first turn no longer waits on either.
 - `pinecall.testing.load(file)`: an agent's class loaded as `pinecall start` loads it, its folder a
   package, for a test whose agent lives in a folder named by its slug.
 - `examples/clinica_norte`: the TypeScript and Ruby example, in Python.

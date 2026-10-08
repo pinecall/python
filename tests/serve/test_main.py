@@ -80,3 +80,28 @@ async def test_the_cli_that_started_it_gone_its_stdin_closes_and_it_leaves(
     await asyncio.wait_for(child.wait(), 10)
     assert child.returncode == 0
     assert len(gateway.commands_of("agent.drain")) == 1
+
+
+async def test_a_registration_the_gateway_refuses_is_its_sentence_and_2_not_a_traceback(
+    tmp_path: Path,
+) -> None:
+    gateway = FakeGateway(taken=frozenset({"recepcion"}))
+    await gateway.start()
+    env = os.environ | {"PINECALL_URL": gateway.url, "PINECALL_KEY": KEY}
+    child = await asyncio.create_subprocess_exec(
+        sys.executable,
+        "-m",
+        "pinecall.serve",
+        "start",
+        "--file",
+        str(written(tmp_path)),
+        "--slug",
+        "recepcion",
+        stdin=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        env=env,
+    )
+    _, err = await asyncio.wait_for(child.communicate(), 10)
+    assert child.returncode == 2
+    assert err.decode().strip() == "refused: recepcion is taken"
+    await gateway.close()

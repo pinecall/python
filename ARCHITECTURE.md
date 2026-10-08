@@ -197,8 +197,8 @@ class and the socket.
    runs one at a time on a task of its own. `on_call` runs; `call.started.state` — the state a
    golden, a persona or `?state=` asked for — is applied after the hook so it is not overwritten,
    and before the first render so the model never reads a state the call was not in.
-3. **The opening send** — one `state.set`, then `prompt.set` for each block that says something,
-   then `tools.set`. Only then does the bridge follow the instance, so a hook writing five fields
+3. **The opening send** — `prompt.set` for each block that says something and `tools.set`, then
+   one `state.set`: the caller's first turn waits on the prompt, and only the log reads the state. Only then does the bridge follow the instance, so a hook writing five fields
    is one prompt and not five.
 4. **On every write** — `state.set` with the field that moved; when an outside event caused it,
    a `state.cause` line naming it; then the sync.
@@ -210,8 +210,9 @@ class and the socket.
    on a thread — and its answer is made JSON; a call no longer served answers with an error.
 7. **An outside event** reaches `on_event` only from a sender the class accepts, one at a time,
    in order, its writes authored `event:<name>`. **The view again** on the caller's turn, on
-   `call.claimed`, and on `memory.ops`, whose recalled facts are what `remembers` answers from;
-   the ops then go to `on_memory`.
+   `call.claimed`, and on `memory.ops` at once, not queued behind a running job: the runtime holds
+   the model's turn while the recall runs, and `remembers` answers from what it brought. The ops
+   then go to `on_memory`.
 8. **`call.ended`** → nothing renders for the call any more; `on_end` runs with the log still
    open, so a farewell line lands.
 9. **`call.attached`** → a call handed to this process mid-conversation: an instance restored to
@@ -229,6 +230,13 @@ python -m pinecall.serve prompt --file agents/x/agent.py --slug x [--state field
 
 - **The door is the environment's, and nothing else:** `PINECALL_URL`, `PINECALL_KEY`,
   `PINECALL_ENV` (`--prod` forces production). Missing → one sentence, exit 2. Never an argv.
+- **A refusal is a sentence, exit 2**: a file that cannot be served, a declaration refused, a
+  gateway that refuses the registration (a slug of another org, a key it does not take).
+- **`PINECALL_LOG=debug`** (or `info`) writes the package's `pinecall` logger to stderr, each line
+  timed to the millisecond: a call's opening and every entry read, with how long after the
+  gateway wrote it.
+- **The `--events` printer is a thread of its own**, flushing each line: a slow reader of stdout
+  never holds the loop that answers the calls.
 - **The file is a module of a package that is its folder** (`pinecall_agents.<folder>.agent`),
   and the folder is on `sys.path`: a module beside the class is imported relatively or by name.
 - **The slug is the folder's**, `--slug`; a class whose `slug = "…"` says another is refused, and
