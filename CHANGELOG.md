@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `pinecall.Agent`: a class's annotated fields are its state, opened per call at the value written
+  (each call gets its own copy of a list); `state(pii=True)` or `state(visibility=…)` says who may
+  see one; a public `@property` is a derived field; `stage: Literal[...]` is the stage. Once
+  sealed, only a tool or a hook may write a field (`UnauthoredWrite`), and every write is recorded
+  with its author. A class that sets one of the world's settings (`voice`, `llm`, `language`…) is
+  refused when it is created, with the `pinecall` verb that sets it.
 - `pinecall.wire`: every frame, event and command the gateway speaks, the runtime's own pydantic
   models; a frame that does not fit raises `pinecall.WireError`, which says what did not fit.
 - The package's frame: `import pinecall` gives `PinecallError`, the root of every error it will

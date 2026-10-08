@@ -30,7 +30,11 @@ one the person typed.
 src/pinecall/
   __init__.py                the door: what a stranger who types `import pinecall` may reach
   _version.py                the version, written once; 0.0.0 until the human names a number
-  errors.py                  one root, `PinecallError`; `WireError`, a frame that does not fit its shape
+  errors.py                  one root, `PinecallError`, and what is refused under it, by name
+  agent.py                   `Agent`: the state's verbs (seal · snapshot · restore · start_in · collapse), the log
+  _author.py                 who is writing right now — a `ContextVar`, per task, never a global
+  _state.py                  the fields a class declares, `state(...)`, the stage, every write and who made it
+  _config.py                 the world's twelve settings, refused at creation with the verb that sets each; the slug
   py.typed                   the package is typed (PEP 561)
   wire/                      the runtime's wire, copied (§4)
     _names.py                the runtime's domain words the wire is written in: Json, Env, Channel, Medium…
@@ -61,6 +65,13 @@ translation; the rows land with the code they describe.
 | `test/index.test.ts` pins the exports by name | `sig/pinecall.rbs` and `rake rbs` | `__init__.py` re-exports `X as X` with `__all__`, `tests/test_init.py` pins the list | Adding to the surface means editing the pin on purpose. pyright strict reads `X as X` as a re-export. |
 | one error root | `Pinecall::Error` | `PinecallError`, named by the door (`__module__ == "pinecall"`) | A traceback names what a person imports, not the private module that defined it. |
 | `src/wire/`, zod schemas written by hand from the runtime's | `lib/pinecall/wire/`, a shape table and `Validate` | `wire/`, the runtime's pydantic models **copied**, `make drift` comparing them field by field | The runtime is Python: the same models are the same contract, and nothing is translated. |
+| `class X extends Agent { patient = null }` and a `Proxy` on the constructor | `state :patient` | `patient: dict \| None = None`, an annotation; `__init_subclass__` puts a descriptor in its place | Python declares its fields the dataclass way, so the annotation is the declaration and the descriptor it becomes **is** the recorder: no Proxy, no macro. |
+| `CONFIG_FIELDS`: four names skipped on every write | config declared on the class | a `ClassVar` (`slug`, `channel_rules`) or an unannotated class attribute is config; an annotation is state | Where the words are written says what they are, as in Ruby. |
+| a getter on the prototype is a derived field | `state(:x) { … }` | a public `@property` is a derived field; a `cached_property` or a `_name` is a collaborator, never state | The decorator a Python reader already knows says which is which. |
+| `Stages<"a" \| "b">`, a string type | `stage :a, :b` | `stage: Literal["a", "b"] = "a"`; a write outside the Literal raises `NotAStage` | The annotation is the declaration a tool's `stage=` is checked against, and pyright checks every write before it runs. |
+| `AsyncLocalStorage` for the current author | `Fiber[:pinecall_author]` | a `ContextVar` | Per task, copied into the tasks it starts and into `asyncio.to_thread`: the same guarantee, in the standard library. |
+| `THE_WORLDS`, refused when `load.ts` builds a probe instance | a class macro per field that raises | `__init_subclass__` refuses a name of `THE_WORLDS` written or annotated in the body | The class is refused while it is being created, on the file's own import, with the same sentence. |
+| the instance built by the constructor, fields set by the Proxy | `initialize` | the state is opened on its first use, not in `__new__` | A subclass with its own `__init__` needs no `super().__init__()`, and pyright strict sees one constructor signature. |
 | the wire's `ZodError` | `Wire::WireError` | `WireError`, a `PinecallError` | A frame that does not fit is the package's error like any other; its message says what did not fit. |
 | `toCamel` / `toSnake` | nothing | nothing; `from_` is the one alias (`from` is reserved), as the runtime spells it | The wire is snake_case and so is Python. |
 
