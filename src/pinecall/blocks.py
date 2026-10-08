@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from pinecall import _doc, _rules, _view
 from pinecall.agent import Agent
-from pinecall.wire._names import Channel, Medium
+from pinecall.call import Line
 from pinecall.wire.parts import PromptBlockSpec, PromptRegion
 
 # Every agent's blocks, in send order. The region boundary is the provider's cache boundary:
@@ -17,19 +17,6 @@ LAYOUT: tuple[PromptBlockSpec, ...] = (
     PromptBlockSpec(name="tools", region="static"),
     PromptBlockSpec(name="view", region="dynamic"),
 )
-
-
-@dataclass(frozen=True)
-class Line:
-    """The call a prompt is rendered for, as the prompt reads it: its channel, medium and code.
-
-    With no call at all (`pinecall prompt`), a phone call's.
-    """
-
-    channel: Channel = "phone"
-    medium: Medium | None = None
-    claimed: str | None = None
-    """The page's code this call claimed, or None."""
 
 
 @dataclass(frozen=True)
@@ -76,12 +63,12 @@ def render(
 
     Args:
         agent: the agent, in the state the prompt is rendered for.
-        line: the call; with none, a phone call's.
+        line: the call; with none, the one the agent serves, else a phone call's.
         resumed: the call picks up one that was cut, which the view may say.
         remembered: the facts the runtime recalled about this caller; the view may ask
             `remembers("…")` of them and never prints one.
     """
-    called = line or Line()
+    called = line or (agent.call.line() if agent.has_call else Line())
     texts = {
         "identity": identity(agent, called),
         # The gateway writes it from the agent's settings; the class sends nothing for it.

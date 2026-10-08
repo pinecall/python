@@ -1,15 +1,35 @@
 """`Agent`, the class a tenant writes: annotated fields are the state, `@tool` methods the verbs."""
 
 import time
+import typing
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import ClassVar, Self
 
-from pinecall import _accepts, _author, _config, _state, _tools, panels
+from pinecall import _accepts, _author, _config, _running, _state, _tools, panels
+from pinecall._answers import Answer
 from pinecall._state import Change
-from pinecall.errors import ToolFailed
-from pinecall.wire._names import EventSource
-from pinecall.wire.parts import ToolSpec
+from pinecall.call import CallWorld
+from pinecall.client import Found
+from pinecall.errors import PinecallError, ToolFailed
+from pinecall.wire._names import EventSource, JsonObject
+from pinecall.wire.parts import MemoryOp, ToolSpec
+
+NO_CALL = "there is no call here: an agent is handed its call when one starts"
+
+NO_LAST = "last(contact) needs a store: mount the agent with last= to give it one"
+
+# Where the contact's previous call is read from: their state then, or None.
+LastCall = Callable[[str], Mapping[str, object] | None]
+
+
+@dataclass(frozen=True)
+class EventMeta:
+    """Who sent an outside event (`app`, `participant`), which browser, its place in the call."""
+
+    source: EventSource
+    seq: int
+    identity: str | None = None
 
 
 @dataclass(frozen=True)
@@ -142,6 +162,73 @@ class Agent:
             raise ToolFailed(f"{name}: this agent declares no such tool")
         return _tools.ran(self, declared, arguments or {})
 
+    # ── the call ──
+
+    @property
+    def call(self) -> CallWorld:
+        """The call being served; outside one it says so, so it never reads as state."""
+        served: object = vars(self).get("_pinecall_call")
+        if not isinstance(served, CallWorld):
+            raise PinecallError(NO_CALL)
+        return served
+
+    @property
+    def has_call(self) -> bool:
+        """Whether this instance is serving a call."""
+        return isinstance(vars(self).get("_pinecall_call"), CallWorld)
+
+    def serving(self, call: CallWorld | None) -> Self:
+        """Hand the instance the call it serves; None once it ended."""
+        vars(self)["_pinecall_call"] = call
+        return self
+
+    def say(self, text: str, *, allow_interruptions: bool | None = None) -> Answer[bool]:
+        """Say this, verbatim, now: `call.say`."""
+        return self.call.say(text, allow_interruptions=allow_interruptions)
+
+    def reply(self, instructions: str, *, allow_interruptions: bool | None = None) -> Answer[bool]:
+        """Make the model speak now, following words the caller never hears: `call.reply`."""
+        return self.call.reply(instructions, allow_interruptions=allow_interruptions)
+
+    @property
+    def knowledge(self) -> "Knowledge":
+        """The bases attached to the agent: `self.knowledge.search("…")` inside a tool."""
+        return Knowledge(self)
+
+    def last(self, contact: str) -> Mapping[str, object] | None:
+        """The contact's previous call, as the store given to `mount(last=…)` keeps it."""
+        store: object = vars(self).get("_pinecall_last")
+        if not callable(store):
+            raise PinecallError(NO_LAST)
+        return typing.cast("LastCall", store)(contact)
+
+    def reads_last_from(self, store: LastCall) -> Self:
+        """Where `last(contact)` reads from."""
+        vars(self)["_pinecall_last"] = store
+        return self
+
+    # ── the hooks: a write inside one is the hook's; each may be a def or an async def ──
+
+    def on_call(self, call: CallWorld) -> object:
+        """A call started; before the first prompt, which goes out once this returns."""
+        return None
+
+    def on_end(self, call: CallWorld) -> object:
+        """The call ended; a line logged here still lands."""
+        return None
+
+    def on_event(self, name: str, data: JsonObject, meta: EventMeta) -> object:
+        """An outside event the class `accepts` arrived, from `meta.source`."""
+        return None
+
+    def on_memory(self, ops: list[MemoryOp], call: CallWorld) -> object:
+        """Memory was read or written for this caller; keep the ops wherever you keep them."""
+        return None
+
+    def run_hook(self, hook: str, *args: object) -> object:
+        """Run a hook to its end, its writes authored `hook:<name>`, as a call does."""
+        return _running.called(f"hook:{hook}", getattr(self, hook), *args)
+
     # ── the log ──
 
     def log(self, name: str, data: object = None) -> Logged:
@@ -173,3 +260,15 @@ class _Log:
 def _log_of(agent: Agent) -> _Log:
     kept: _Log = vars(agent).setdefault("_pinecall_log", _Log([], []))
     return kept
+
+
+class Knowledge:
+    """The agent's bases, searched for the call in hand by the gateway, which logs what it found."""
+
+    def __init__(self, agent: Agent) -> None:
+        """The bases of `agent`'s call."""
+        self._agent = agent
+
+    def search(self, query: str, *, k: int | None = None) -> Answer[list[Found]]:
+        """The chunks found: `await` it, or `.result()` it on a tool's thread."""
+        return self._agent.call.search(query, k=k)

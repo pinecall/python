@@ -141,6 +141,60 @@ A tool may be a `def` or an `async def`. In a call, an `async def` runs on the e
 write as the tool. In a test, `agent.run_tool("find_patient", {"name": "Ana", "phone": "600…"})`
 runs either to its end, as a call would.
 
+## The hooks
+
+```python
+class ClinicaNorte(Agent):
+    def on_call(self, call: CallWorld) -> None:  # a call started; writes here are the hook's
+        self.patient = self.agenda.by_phone(call.from_ or "")
+        if self.patient:
+            self.stage = "choose"
+
+    def on_end(self, call: CallWorld) -> None:  # a line logged here still lands
+        self.log("resultado", {"fase": self.stage})
+
+    def on_event(
+        self, name: str, data: JsonObject, meta: EventMeta
+    ) -> None: ...  # an accepted outside fact
+    def on_memory(self, ops: list[MemoryOp], call: CallWorld) -> None: ...  # memory read or written
+```
+
+Each may be a `def` or an `async def`. `on_call` runs before the first prompt goes out, so the
+model never reads a state the call was not in; the state a golden or a persona opens the call in
+is applied after it, so the hook never overwrites it. An outside fact reaches `on_event` only if
+the class `accepts` the pair — an event declared from `app` that arrives from a browser is
+somebody else's event with your name on it, and the hook never sees it.
+
+## The call
+
+Inside a tool or a hook, `self.call` is the live call; outside one it says so rather than being
+`None`.
+
+```python
+self.say("Un momento, que lo miro.")  # an Answer: True once the turn lands, False after 30 s
+self.reply("Dile que ya está reservado.")  # the model speaks, guided by words nobody hears
+self.call.send("cart", {"total": 42})  # a payload to the browsers in the room
+self.call.participant(identity).mute()  # and .remove()
+self.call.invite("+34910000001")  # a phone leg; invite(identity, "participant") for a seat
+self.call.transfer("+34910000002")  # an Answer: a Transferred, ok=False if they are still here
+self.call.attention("quiere hablar con una persona", wait_s=60)  # an Attended: who took the line
+self.call.hold()  # and unhold()
+self.call.dtmf("1#")
+self.call.claim("4821")  # the page showing 4821 follows this call; call.claimed says so
+self.call.callback("+34600000001", when="mañana por la tarde", note="presupuesto")
+self.call.opt_out("no quiere más llamadas")  # their number joins the do-not-call list
+self.call.hangup("done")
+self.knowledge.search("horario de verano", k=3)  # an Answer: the chunks, searched for this call
+```
+
+**A verb that waits answers with an `Answer`.** In an `async def` tool, `await` it; in a `def`
+tool, which runs on a thread of its own, `.result()` waits for it there — or leave it, and the
+command still goes. It is settled by the entry that says how it went, by its ceiling, or by the
+call ending first (`ok=False`, `the call ended before it was answered`).
+
+There is no LiveKit here and no escape hatch to it: a need the room cannot express is a new
+command with a name.
+
 ## The panel beside a conversation: `@panel`
 
 The console draws a pane beside every thread in **Calls**. Without a panel it is what the console

@@ -99,9 +99,11 @@ convention = "google"
 [tool.ruff.lint.per-file-ignores]
 # A test's name is its sentence; asserts and literal numbers are what a test is made of.
 # A stand-in takes what the real one is given, and may not read it.
-"tests/**" = ["ARG001", "ARG005", "D103", "INP001", "PLR2004", "S101"]
+"tests/**" = ["ARG001", "ARG002", "ARG005", "D103", "INP001", "PLR2004", "S101"]
 "tests/rules/**" = ["S603", "S607"]  # the rules ask git which files the repository holds
-"scripts/**" = ["INP001", "T201"]  # run by path, and they print what they found
+"scripts/**" = ["INP001", "T201"]
+# The hooks are the tenant's to override: the base's take what they will be given and read none.
+"src/pinecall/agent.py" = ["ARG002"]  # run by path, and they print what they found
 
 [tool.ruff.lint.isort]
 known-first-party = ["pinecall", "tests"]

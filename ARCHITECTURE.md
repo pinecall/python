@@ -51,6 +51,9 @@ src/pinecall/
   _calls.py                  one live call as the app holds it, and the book of them
   _listeners.py              who is listening for what; a listener's failure said, never raised
   _endpoints.py              the gateway's doors from one base URL, and the key as a Bearer header
+  call.py                    `CallWorld`: the call's line, room and turns, a verb per command; `Line`, `CallLine`
+  _answers.py                what a verb that waits answers: `Answer`, settled by its entry, its ceiling, or the end
+  _room.py                   who is in the room, a seat's two verbs, the turns
   observe.py                 reading a log: one page (`history`), or the stream from a cursor on (`observe`)
 docs/                        the pages a person writing an agent reads: README · writing-an-agent · the-view
   py.typed                   the package is typed (PEP 561)
@@ -108,6 +111,9 @@ translation; the rows land with the code they describe.
 | `#ask` and a `Promise` settled by the entry | `ask` and a `Thread::Queue`, the declaration on its own thread | `_ask` and a `Future`, the declaration awaited from the dialling task | A task waiting for an entry must not be the task reading them. |
 | `fetch` for the lookup door | `Client::Rest` | `httpx` | Anthropic's SDK's choice for HTTP; one request per search. |
 | `FakeGateway` (`src/client/testing/gateway.ts`) | `test/client/fake_gateway.rb` | `tests/fakes/gateway.py`, on aiohttp | A real socket, a real handshake, a real POST: the client is tested as it runs. aiohttp is a dev dependency only. |
+| a `Promise` per waiting verb | a `Thread::Queue` per waiting verb, popped with a ceiling | an `Answer`: a `concurrent.futures.Future` an `async def` awaits and a `def` waits for with `.result()` | A tool is either, and the same verb must serve both; the future is thread-safe and the loop settles it. |
+| `this.call`, set by the bridge | `call`, a method that raises outside a call | `call`, a property that raises outside one; `serving(call)` hands it | It never reads as a field, and a test hands an instance its call in one line. |
+| the hooks, `async` | `on_call`, `on_end`, `on_event`, `on_memory` | the same four, each a `def` or an `async def`, under `hook:<name>` | A hook that reads your CRM may well be async; one that writes two fields need not be. |
 | the wire's `ZodError` | `Wire::WireError` | `WireError`, a `PinecallError` | A frame that does not fit is the package's error like any other; its message says what did not fit. |
 | `toCamel` / `toSnake` | nothing | nothing; `from_` is the one alias (`from` is reserved), as the runtime spells it | The wire is snake_case and so is Python. |
 

@@ -5,12 +5,15 @@ from pinecall._state import state as state
 from pinecall._tools import tool as tool
 from pinecall._version import __version__ as __version__
 from pinecall.agent import Agent as Agent
+from pinecall.agent import EventMeta as EventMeta
 from pinecall.agent import Logged as Logged
 from pinecall.blocks import Block as Block
 from pinecall.blocks import Blocks as Blocks
-from pinecall.blocks import Line as Line
 from pinecall.blocks import render as render
 from pinecall.blocks import show_prompt as show_prompt
+from pinecall.call import CallLine as CallLine
+from pinecall.call import CallWorld as CallWorld
+from pinecall.call import Line as Line
 from pinecall.client import Client as Client
 from pinecall.errors import DeclarationRefused as DeclarationRefused
 from pinecall.errors import DevRefused as DevRefused
@@ -29,11 +32,14 @@ __all__ = [
     "Agent",
     "Block",
     "Blocks",
+    "CallLine",
+    "CallWorld",
     "Change",
     "Client",
     "DeclarationRefused",
     "DevRefused",
     "Drawing",
+    "EventMeta",
     "Line",
     "Logged",
     "NotAStage",

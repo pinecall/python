@@ -148,7 +148,7 @@ def ran(agent: object, declared: Declared, given: Mapping[str, object]) -> objec
     """Run the tool to its end, its writes authored by its name, its answer cut to its preview."""
     arguments = _spec.validated(declared.name, declared.arguments, given)
     return previewed(
-        _running.called(declared.name, getattr(agent, declared.name), arguments), declared
+        _running.called(declared.name, getattr(agent, declared.name), **arguments), declared
     )
 
 
@@ -156,7 +156,7 @@ async def run(agent: object, declared: Declared, given: Mapping[str, object]) ->
     """The same, from a loop: an `async def` on it, a `def` on a thread."""
     arguments = _spec.validated(declared.name, declared.arguments, given)
     return previewed(
-        await _running.run(declared.name, getattr(agent, declared.name), arguments), declared
+        await _running.run(declared.name, getattr(agent, declared.name), **arguments), declared
     )
 
 

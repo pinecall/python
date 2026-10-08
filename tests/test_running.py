@@ -17,15 +17,15 @@ async def who_async(**_: object) -> tuple[str | None, str]:
 
 
 def test_with_no_loop_a_def_runs_here_and_an_async_def_on_a_loop_of_its_own() -> None:
-    assert called("book", who, {}) == ("book", threading.current_thread().name)
-    assert cast("tuple[str, str]", called("book", who_async, {}))[0] == "book"
+    assert called("book", who) == ("book", threading.current_thread().name)
+    assert cast("tuple[str, str]", called("book", who_async))[0] == "book"
     assert current() is None
 
 
 def test_from_a_loop_a_def_runs_on_another_thread_and_an_async_def_on_the_loop() -> None:
     async def both() -> tuple[object, object, str]:
         here = threading.current_thread().name
-        return await run("find", who, {}), await run("find", who_async, {}), here
+        return await run("find", who), await run("find", who_async), here
 
     ran_a_thread, ran_the_loop, here = asyncio.run(both())
     on_a_thread = cast("tuple[str, str]", ran_a_thread)
@@ -35,8 +35,8 @@ def test_from_a_loop_a_def_runs_on_another_thread_and_an_async_def_on_the_loop()
     assert on_the_loop[1] == here
 
 
-def test_the_arguments_are_passed_by_name() -> None:
+def test_the_arguments_are_passed_as_given() -> None:
     def echo(day: str, how_many: int) -> str:
         return f"{day}x{how_many}"
 
-    assert called("echo", echo, {"how_many": 2, "day": "lunes"}) == "lunesx2"
+    assert called("echo", echo, "lunes", how_many=2) == "lunesx2"

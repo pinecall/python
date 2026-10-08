@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `self.call`, a `CallWorld`: the call's line, room and turns, and a verb per command — `say`,
+  `reply`, `send`, `participant(…).mute()`, `invite`, `transfer`, `attention`, `hold`, `unhold`,
+  `dtmf`, `claim`, `callback`, `opt_out`, `hangup`, `search`. A verb that waits answers with an
+  `Answer`, awaited in an `async def` or `.result()` on a `def` tool's thread. The four hooks,
+  `on_call`, `on_end`, `on_event`, `on_memory`, each a `def` or an `async def`.
 - `Client.history(call=…)` and `Client.observe(call=…)`: a call's log, or an agent's own, as one
   page or as a stream, each entry with the state it folds to — the runtime's own reducer.
 - `pinecall.Client(url, api_key, env)`: one socket to the gateway and the agents held on it —
