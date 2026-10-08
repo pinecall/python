@@ -35,6 +35,10 @@ src/pinecall/
   _author.py                 who is writing right now — a `ContextVar`, per task, never a global
   _state.py                  the fields a class declares, `state(...)`, the stage, every write and who made it
   _config.py                 the world's twelve settings, refused at creation with the verb that sets each; the slug
+  _tools.py                  `@tool`, the tools a class declares, what this state shows, running one
+  _spec.py                   one tool as the gateway receives it: the arguments' model, its schema, what is refused
+  _doc.py                    a docstring as the model reads it: one line, and what `Args:` says of each parameter
+  _running.py                a tenant's method run under its author: a `def` or an `async def`, from a loop or not
   py.typed                   the package is typed (PEP 561)
   wire/                      the runtime's wire, copied (§4)
     _names.py                the runtime's domain words the wire is written in: Json, Env, Channel, Medium…
@@ -72,6 +76,11 @@ translation; the rows land with the code they describe.
 | `AsyncLocalStorage` for the current author | `Fiber[:pinecall_author]` | a `ContextVar` | Per task, copied into the tasks it starts and into `asyncio.to_thread`: the same guarantee, in the standard library. |
 | `THE_WORLDS`, refused when `load.ts` builds a probe instance | a class macro per field that raises | `__init_subclass__` refuses a name of `THE_WORLDS` written or annotated in the body | The class is refused while it is being created, on the file's own import, with the same sentence. |
 | the instance built by the constructor, fields set by the Proxy | `initialize` | the state is opened on its first use, not in `__new__` | A subclass with its own `__init__` needs no `super().__init__()`, and pyright strict sees one constructor signature. |
+| `@tool({...})`, a decorator | `tool ...` above the `def`, caught by `method_added` | `@tool(...)`, or bare `@tool`; it marks the function, and the class reads its marks once, when it is created | Python has decorators; the class still refuses a bad tool on the file's import, not at the first call. |
+| `docstrings.ts`: the class's source parsed with oxc | `Method#source_location` and the comment above | `inspect.getdoc`, one line up to the first Google section; a parameter's description from `Args:` | A docstring is part of the object in Python: no source to read, no parser. |
+| parameter types read off the TypeScript signature | `params:` for the types, keyword names from `Method#parameters` | the annotations, through a pydantic model built per tool: its JSON Schema is what the model reads, and it validates what the model sends | One model is the schema and the check, so the two cannot disagree; a `Literal` is an enum, a `BaseModel` a nested object, `"3"` for an `int` is converted. |
+| a tool takes positional arguments, mapped by name | keyword arguments only | any parameter a caller can pass by name; `*args`, `**kwargs` and positional-only are refused | A model fills a JSON object by name. |
+| a `Promise` per tool call | a thread per tool call | an `async def` tool runs on the loop, a `def` one on a thread (`asyncio.to_thread`), both authored | A blocking CRM call in a tool never blocks the socket; a tenant writes whichever they have. |
 | the wire's `ZodError` | `Wire::WireError` | `WireError`, a `PinecallError` | A frame that does not fit is the package's error like any other; its message says what did not fit. |
 | `toCamel` / `toSnake` | nothing | nothing; `from_` is the one alias (`from` is reserved), as the runtime spells it | The wire is snake_case and so is Python. |
 
