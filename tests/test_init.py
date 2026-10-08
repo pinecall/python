@@ -27,6 +27,7 @@ THE_DOOR = [
     "Who",
     "WireError",
     "__version__",
+    "hold",
     "panel",
     "render",
     "show_prompt",

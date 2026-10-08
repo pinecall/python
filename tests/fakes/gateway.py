@@ -66,6 +66,10 @@ class FakeGateway:
         """Every command of one type received so far."""
         return [one for one in self.received if one["type"] == type_]
 
+    def data_of(self, type_: str) -> list[dict[str, object]]:
+        """The data of every command of one type received so far."""
+        return [cast("dict[str, object]", one["data"]) for one in self.commands_of(type_)]
+
     async def emit(
         self, agent: str, call: str | None, type_: str, data: Mapping[str, object]
     ) -> None:

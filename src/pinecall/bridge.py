@@ -48,6 +48,8 @@ class Live:
     # A tool's thread and the loop may both sync: what was sent is read and written under it.
     lock: threading.Lock = field(default_factory=threading.Lock)
     jobs: asyncio.Queue[Job | None] = field(default_factory=asyncio.Queue[Job | None])
+    busy: bool = False
+    """Whether one of its jobs is running now."""
 
 
 @dataclass(frozen=True)
@@ -189,10 +191,13 @@ def line_of(call: Call) -> CallLine:
 async def work(served: Live) -> None:
     """Run the call's jobs one at a time, in the order they came, until the call ends."""
     while (job := await served.jobs.get()) is not None:
+        served.busy = True
         try:
             await job()
         except Exception:
             logger.exception("pinecall: %s", served.call.id)
+        finally:
+            served.busy = False
 
 
 # The state the opener asked for is applied after on_call, which would overwrite it, and before the

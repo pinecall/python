@@ -55,6 +55,14 @@ src/pinecall/
   _answers.py                what a verb that waits answers: `Answer`, settled by its entry, its ceiling, or the end
   _room.py                   who is in the room, a seat's two verbs, the turns
   bridge.py                  `mount`: one instance per call, its jobs in order, the state and only the blocks that moved
+  testing.py                 `Gateway`: a gateway that is not there, for ring 0, from a plain `def test_…`
+  serve/                     `python -m pinecall.serve`: the entry the one CLI starts — `start`, `prompt` — and `hold`
+    _loading.py              its flags, the class in a file (its folder a package), a state field by field
+    _starting.py             `start`: hold the agents named, the console's `view.render`, leaving
+    _prompting.py            `prompt`: the page offline, and `--show-machine`
+    _viewing.py              `view.render`, the one console verb an agent's own process answers
+    _held.py                 what a process holds, and leaving: a drain, then the socket, once
+    _lines.py                the wire entry a line for the CLI, a line for a person, the drain line
   observe.py                 reading a log: one page (`history`), or the stream from a cursor on (`observe`)
 docs/                        the pages a person writing an agent reads: README · writing-an-agent · the-view
   py.typed                   the package is typed (PEP 561)
@@ -75,6 +83,7 @@ tests/                       mirrors src/ one to one
   test_init.py               the door, pinned by name
   rules/test_the_tree.py     the ceiling, the opening line of every module, the mirror
   wire/golden/call-log.json  the runtime's golden call log, shared with the TypeScript and Ruby packages
+  fakes/project.py           a project of one agent written into a folder, as the CLI lays one out
   fakes/gateway.py           a gateway that is not there: a real socket, the lookup and log doors on 127.0.0.1
   wire/entries.py            entries of one made-up call, for the reducer's tests
 scripts/wire_drift.py        `make drift`: what the runtime's wire says that this copy does not
@@ -117,6 +126,9 @@ translation; the rows land with the code they describe.
 | the hooks, `async` | `on_call`, `on_end`, `on_event`, `on_memory` | the same four, each a `def` or an `async def`, under `hook:<name>` | A hook that reads your CRM may well be async; one that writes two fields need not be. |
 | `inOrder`, a promise chain per call | a thread per call running its jobs | an `asyncio.Queue` per call and one task draining it | The opening, an outside event and the end of one call never overlap, which is what makes `call.cause` mean anything. Tool calls are not queued: they run side by side, as in both. |
 | `onMemory`, declared and never called | `on_memory`, declared and never called | `on_memory(ops, call)`, called after a `memory.ops` re-renders the view | The hook says what it is for; here it is. |
+| `src/serve/` — `main(argv, io)` | `Pinecall::Serve.main(argv, out:, err:, env:, input:, signals:)` | `pinecall.serve.main(argv, out=, err=, env=)`, run as `python -m pinecall.serve` | One CLI for every language: it never loads a class, so each SDK ships the entry that does and no executable. |
+| `mount({pc})` and `new Pinecall` in your own process | `Pinecall.serve(Klass, url:, api_key:)` | `await pinecall.hold(Klass, url=, api_key=)` | A function named `serve` on the door would hide the module `pinecall.serve` the CLI runs. |
+| `FakeGateway` for ring 0 | `Pinecall::Testing::Gateway`, threads it waits on | `pinecall.testing.Gateway`, a `Client` with no socket and a loop of its own it runs until the agent settles | A tenant's test is a plain `def test_…`: no pytest plugin, no `async`. |
 | the wire's `ZodError` | `Wire::WireError` | `WireError`, a `PinecallError` | A frame that does not fit is the package's error like any other; its message says what did not fit. |
 | `toCamel` / `toSnake` | nothing | nothing; `from_` is the one alias (`from` is reserved), as the runtime spells it | The wire is snake_case and so is Python. |
 
@@ -203,7 +215,44 @@ class and the socket.
    the state the gateway kept, no `on_call`, the whole prompt sent. A call already served here
    keeps its instance and sends its whole prompt again.
 
-## 7. Packaging
+## 7. The serve contract
+
+The one CLI (npm `pinecall`) starts this package's entry for the two verbs that need the class:
+
+```
+python -m pinecall.serve start --file agents/x/agent.py --slug x [--console] [--events] [--prod]
+python -m pinecall.serve prompt --file agents/x/agent.py --slug x [--state field=json]… [--channel c] [--medium voice|text] [--show-machine]
+```
+
+- **The door is the environment's, and nothing else:** `PINECALL_URL`, `PINECALL_KEY`,
+  `PINECALL_ENV` (`--prod` forces production). Missing → one sentence, exit 2. Never an argv.
+- **The file is a module of a package that is its folder** (`pinecall_agents.<folder>.agent`),
+  and the folder is on `sys.path`: a module beside the class is imported relatively or by name.
+- **The slug is the folder's**, `--slug`; a class whose `slug = "…"` says another is refused, and
+  one that says none is served as it, so its view is `views/<slug>.jinja`.
+- **`--events`:** one line per wire entry, `{"type","agent","call","data"}` with `data` as the
+  gateway wrote it, `agent.registered` first (the listener is in place before the socket opens),
+  each line flushed.
+- **`--console`:** `takes_unclaimed=False` — a console's process takes only the calls it opened.
+- **Leaving:** SIGINT, SIGTERM or the end of its stdin (the CLI that started it is gone) drains,
+  then closes; a second signal closes at once, and the end of stdin after a signal is not a second
+  one (the CLI sends both); a stop from the org closes without draining. A signal handler only
+  pushes onto a queue: the main task does the leaving.
+- **The console's verbs** are answered by the CLI's companion; the one this process answers,
+  `view.render`, is the class's panel (404 when it has none, 502 when it fails, 422 for an ask that
+  names no conversation), and every other verb is refused 404 with the TypeScript entry's sentence.
+
+## 8. The four rings
+
+| ring | what it asks | where it runs |
+|---|---|---|
+| 0 | does the class behave? | `pytest`, in the tenant's own repo, with `pinecall.testing.Gateway`: no network, no key, no model |
+| 1 | does the agent hold its goldens? | `pinecall test`: the one CLI, this package's serve entry holding the class |
+| 2 | does it hold on a real line? | `pinecall test --voice` and `pinecall simulate --voice` |
+| 3 | what does one real call score? | `pinecall eval <call-id>` |
+| 4 | what did every call score? | `call.score`, written by the runtime at hang-up |
+
+## 9. Packaging
 
 - **A library, no executable.** The verbs are the one `pinecall` CLI's (npm); it starts
   `python -m pinecall.serve`.

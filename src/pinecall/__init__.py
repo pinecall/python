@@ -27,6 +27,7 @@ from pinecall.errors import WireError as WireError
 from pinecall.panels import Drawing as Drawing
 from pinecall.panels import Who as Who
 from pinecall.panels import panel as panel
+from pinecall.serve import hold as hold
 
 __all__ = [
     "Agent",
@@ -51,6 +52,7 @@ __all__ = [
     "Who",
     "WireError",
     "__version__",
+    "hold",
     "panel",
     "render",
     "show_prompt",

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `python -m pinecall.serve start|prompt`: the entry the one `pinecall` CLI starts a Python agent
+  with. `pinecall.hold(Class, url=, api_key=)` holds one from a process of your own.
+- `pinecall.testing.Gateway`: ring 0 — a class held as a call holds it, from a plain test, with no
+  network and no key. `docs/testing-an-agent.md`, `docs/production.md`.
 - `pinecall.bridge.mount(Class, client)`: a class held on a client, an instance of its own per
   call, opened with `on_call` and the state its opener asked for in one prompt, and from then on
   only the fields and blocks that changed. `on_memory` is called when memory is read or written.
