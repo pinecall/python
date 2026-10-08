@@ -1,13 +1,14 @@
 """`Agent`, the class a tenant writes: annotated fields are the state, `@tool` methods the verbs."""
 
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import ClassVar, Self
 
-from pinecall import _author, _config, _state, _tools
+from pinecall import _accepts, _author, _config, _state, _tools
 from pinecall._state import Change
 from pinecall.errors import ToolFailed
+from pinecall.wire._names import EventSource
 from pinecall.wire.parts import ToolSpec
 
 
@@ -50,7 +51,11 @@ class Agent:
     channel_rules: ClassVar[bool] = True
     """`False` leaves the `<channel>` part out of the prompt."""
 
+    accepts: ClassVar[Mapping[str, Sequence[EventSource]]] = {}
+    """The outside events the agent takes, and from whom: `{"slot.released": ["app"]}`."""
+
     _pinecall_fields: ClassVar[_state.Fields] = _state.Fields({}, (), None)
+    _pinecall_events: ClassVar[dict[str, tuple[EventSource, ...]]] = {}
     _pinecall_tools: ClassVar[dict[str, _tools.Declared]] = {}
 
     def __init_subclass__(cls, **kwargs: object) -> None:
@@ -58,6 +63,7 @@ class Agent:
         super().__init_subclass__(**kwargs)
         _config.refuse_the_worlds(cls)
         cls._pinecall_fields = _state.fields_of(cls, Agent, cls._pinecall_fields)
+        cls._pinecall_events = _accepts.accepted(cls, cls._pinecall_events)
         cls._pinecall_tools = _tools.declared_tools(
             cls, Agent, cls._pinecall_tools, cls._pinecall_fields.stages
         )

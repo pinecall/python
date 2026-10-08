@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `Agent.accepts = {"slot.released": ["app"]}`: the outside events an agent takes, and from whom
+  (`app`, your backend; `participant`, a browser in the call). A sender that is neither is refused
+  when the class is created.
+- `docs/writing-an-agent.md`: the class, its config, the world's settings, state, the stage,
+  tools, the events it accepts, and every refusal with its sentence.
 - `@pinecall.tool`: a method the model may call, its docstring the description and its `Args:`
   section each parameter's. The parameters' types are the method's annotations (a `Literal` is
   an enum, a pydantic model a nested object), and what the model sends is checked and converted

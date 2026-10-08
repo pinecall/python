@@ -39,6 +39,9 @@ src/pinecall/
   _spec.py                   one tool as the gateway receives it: the arguments' model, its schema, what is refused
   _doc.py                    a docstring as the model reads it: one line, and what `Args:` says of each parameter
   _running.py                a tenant's method run under its author: a `def` or an `async def`, from a loop or not
+  _accepts.py                the outside events a class accepts, and from whom; what reaches `on_event`
+  _searching.py              whether a class searches its bases, read off its own file with `ast`
+docs/                        the pages a person writing an agent reads: README · writing-an-agent
   py.typed                   the package is typed (PEP 561)
   wire/                      the runtime's wire, copied (§4)
     _names.py                the runtime's domain words the wire is written in: Json, Env, Channel, Medium…
@@ -81,6 +84,8 @@ translation; the rows land with the code they describe.
 | parameter types read off the TypeScript signature | `params:` for the types, keyword names from `Method#parameters` | the annotations, through a pydantic model built per tool: its JSON Schema is what the model reads, and it validates what the model sends | One model is the schema and the check, so the two cannot disagree; a `Literal` is an enum, a `BaseModel` a nested object, `"3"` for an `int` is converted. |
 | a tool takes positional arguments, mapped by name | keyword arguments only | any parameter a caller can pass by name; `*args`, `**kwargs` and positional-only are refused | A model fills a JSON object by name. |
 | a `Promise` per tool call | a thread per tool call | an `async def` tool runs on the loop, a `def` one on a thread (`asyncio.to_thread`), both authored | A blocking CRM call in a tool never blocks the socket; a tenant writes whichever they have. |
+| `static events = { name: { from: [...] } }` | `accepts "name", from: [:app]` | `accepts = {"name": ["app"]}`, a `ClassVar` on `Agent`, merged over the parents' | A class attribute is where Python writes what a class is; the base's `ClassVar` is what pyright reads a subclass's dict against. |
+| `searching.ts`: oxc's AST for `this.knowledge` | `Searching`: Ripper's tokens | `_searching.py`: `ast.walk` for a call of `.search` on `knowledge` or `call` | The standard library parses Python; a word in a string or a comment is not a call. |
 | the wire's `ZodError` | `Wire::WireError` | `WireError`, a `PinecallError` | A frame that does not fit is the package's error like any other; its message says what did not fit. |
 | `toCamel` / `toSnake` | nothing | nothing; `from_` is the one alias (`from` is reserved), as the runtime spells it | The wire is snake_case and so is Python. |
 

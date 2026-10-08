@@ -28,7 +28,7 @@ A change lands with the page that describes it, in the same commit.
 | you changed | you edit |
 |---|---|
 | a module, an entity, the correspondence with the TypeScript package or the gem | `ARCHITECTURE.md` |
-| anything a person writing an agent types | the `docs/` page for it |
+| anything a person writing an agent types | the `docs/` page for it (`docs/README.md` lists them) |
 | a rule that is refused at load | `docs/`, with the sentence the refusal says |
 | what `import pinecall` gives | `tests/test_init.py`, which pins it by name |
 | anything a user would notice | `CHANGELOG.md`, under Unreleased |
