@@ -4,9 +4,13 @@ Ring 0 is the ring your own suite lives in: no network, no key, no model, no gat
 every commit, in a second, and it is where nearly every mistake is caught.
 
 ```python
-from pinecall.testing import Gateway
+from pathlib import Path
 
-from agents.clinica_norte.agent import ClinicaNorte
+from pinecall.testing import Gateway, load
+
+# A folder named by a slug cannot be imported: the class is loaded as `pinecall start` loads it,
+# its folder a package, so `agent.py` imports what sits beside it with `from .agenda import …`.
+ClinicaNorte = load(Path(__file__).parents[2] / "agents" / "clinica-norte" / "agent.py")
 
 
 def test_una_paciente_de_la_ficha_no_tiene_que_decir_su_nombre_otra_vez() -> None:

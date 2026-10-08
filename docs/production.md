@@ -21,7 +21,7 @@ import os
 
 import pinecall
 
-from agents.clinica_norte.agent import ClinicaNorte
+from clinica.agent import ClinicaNorte  # a module of your app, like any other
 
 
 async def lifespan(app):
@@ -34,7 +34,8 @@ async def lifespan(app):
 
 `pinecall.Client` reads nothing from the environment: the app hands it the gateway and the key it
 keeps. A person's key would need `env="production"`; a server's token needs nothing. The class
-registers under its own `slug`, or its name in kebab-case.
+registers under its own `slug`, or its name in kebab-case, and its view is `views/<slug>.jinja` beside
+the module's file.
 
 ## (b) `pinecall start --prod`, from the one CLI
 
