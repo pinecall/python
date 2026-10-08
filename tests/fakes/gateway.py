@@ -31,6 +31,8 @@ class FakeGateway:
         self.searched: list[dict[str, object]] = []
         self.chunks: list[dict[str, object]] = []
         self.headers: list[dict[str, str]] = []
+        self.logs: dict[str, list[dict[str, object]]] = {}
+        self.resumed_from: list[str | None] = []
         self._sockets: list[web.WebSocketResponse] = []
         self._holders: dict[str, web.WebSocketResponse] = {}
         self._seq = itertools.count(1)
@@ -43,6 +45,7 @@ class FakeGateway:
         app = web.Application()
         app.router.add_get("/v1/apps", self._apps_socket)
         app.router.add_post("/v1/calls/{call}/lookup", self._lookup)
+        app.router.add_get("/v1/calls/{call}/events", self._log)
         self._runner = web.AppRunner(app)
         await self._runner.setup()
         bound = sockets.socket()
@@ -90,6 +93,10 @@ class FakeGateway:
             if time.monotonic() > deadline:
                 raise TimeoutError("the fake gateway never saw it")
             await asyncio.sleep(0.01)
+
+    def write(self, call: str, type_: str, data: Mapping[str, object]) -> None:
+        """Append an entry to a call's log, as the store keeps it."""
+        self.logs.setdefault(call, []).append(json.loads(self._entry("clinica", call, type_, data)))
 
     def _entry(self, agent: str, call: str | None, type_: str, data: Mapping[str, object]) -> str:
         entry = {"seq": next(self._seq), "ts": time.time(), "call": call, "agent": agent}
@@ -144,3 +151,24 @@ class FakeGateway:
             return web.json_response({"detail": "that key opens nothing here"}, status=403)
         self.searched.append(await request.json() | {"call": request.match_info["call"]})
         return web.json_response({"output": {"chunks": self.chunks}})
+
+    # A page as JSON, or the entries after the cursor as server-sent events and then a drop.
+    async def _log(self, request: web.Request) -> web.StreamResponse:
+        if request.headers.get("authorization") != f"Bearer {KEY}":
+            return web.Response(status=403, text="that key opens nothing here")
+        after = int(request.query.get("after", "0"))
+        entries = [
+            one
+            for one in self.logs.get(request.match_info["call"], [])
+            if cast("int", one["seq"]) > after
+        ]
+        if request.headers.get("accept") != "text/event-stream":
+            last = cast("int", entries[-1]["seq"]) if entries else after
+            return web.json_response({"entries": entries, "live": True, "next": last})
+        self.resumed_from.append(request.headers.get("last-event-id"))
+        answer = web.StreamResponse(headers={"content-type": "text/event-stream"})
+        await answer.prepare(request)
+        await answer.write(b": keep-alive\n\n")
+        for one in entries:
+            await answer.write(f"id: {one['seq']}\ndata: {json.dumps(one)}\n\n".encode())
+        return answer

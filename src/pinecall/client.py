@@ -5,7 +5,7 @@ import contextlib
 import socket
 import sys
 import typing
-from collections.abc import Callable, Sequence
+from collections.abc import AsyncIterator, Callable, Sequence
 from dataclasses import dataclass
 
 import httpx
@@ -17,6 +17,7 @@ from pinecall._endpoints import lookup_url, signed
 from pinecall._listeners import AnyListener, Listener, Listeners
 from pinecall._version import __version__
 from pinecall.errors import NotConnected, PinecallError, Refused, WireError
+from pinecall.observe import Observation, Page, Reader, history, observe
 from pinecall.wire._names import Env
 from pinecall.wire.commands import COMMANDS
 from pinecall.wire.events import ErrorEvent, event_of
@@ -182,6 +183,23 @@ class Client:
     def on_stopped(self, listener: Callable[[str], None]) -> Callable[[], None]:
         """A person of the org stopped this app: the socket is closed for good."""
         return _kept(self._stopped, listener)
+
+    # ── reading a log ──
+
+    async def history(
+        self, *, call: str | None = None, agent: str | None = None, after: int = 0
+    ) -> Page:
+        """One page of a call's log, or an agent's own, after the cursor, and its folded state."""
+        return await history(self._reader(), call=call, agent=agent, after=after)
+
+    def observe(
+        self, *, call: str | None = None, agent: str | None = None, after: int = 0
+    ) -> AsyncIterator[Observation]:
+        """A call's log, or an agent's own, from the cursor on, each entry with the state so far."""
+        return observe(self._reader(), call=call, agent=agent, after=after)
+
+    def _reader(self) -> Reader:
+        return Reader(self.url, *self._signing)
 
     # ── a search for a call ──
 

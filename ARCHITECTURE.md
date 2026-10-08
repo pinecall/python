@@ -51,6 +51,7 @@ src/pinecall/
   _calls.py                  one live call as the app holds it, and the book of them
   _listeners.py              who is listening for what; a listener's failure said, never raised
   _endpoints.py              the gateway's doors from one base URL, and the key as a Bearer header
+  observe.py                 reading a log: one page (`history`), or the stream from a cursor on (`observe`)
 docs/                        the pages a person writing an agent reads: README · writing-an-agent · the-view
   py.typed                   the package is typed (PEP 561)
   wire/                      the runtime's wire, copied (§4)
@@ -65,11 +66,13 @@ docs/                        the pages a person writing an agent reads: README �
     metrics.py               livekit-agents' metric blocks, as they are
     scores.py                `call.score` and its judgments
     state.py                 the state a log reduces to
+    reduce.py                the fold: a log's entries into that state, the runtime's own
 tests/                       mirrors src/ one to one
   test_init.py               the door, pinned by name
   rules/test_the_tree.py     the ceiling, the opening line of every module, the mirror
   wire/golden/call-log.json  the runtime's golden call log, shared with the TypeScript and Ruby packages
-  fakes/gateway.py           a gateway that is not there: a real socket and lookup door on 127.0.0.1 (aiohttp)
+  fakes/gateway.py           a gateway that is not there: a real socket, the lookup and log doors on 127.0.0.1
+  wire/entries.py            entries of one made-up call, for the reducer's tests
 scripts/wire_drift.py        `make drift`: what the runtime's wire says that this copy does not
 ```
 
@@ -121,6 +124,12 @@ it, changed in four ways and no more:
 - `events.py` is three modules under the 400-line ceiling (`events`, `events_call`, `events_turn`);
   `events.py` re-imports the other two, so `EVENTS` is still one registry.
 
+The reducer is the runtime's too: `wire/reduce.py` is `runtime-v2/pinecall/log/reduce.py`'s fold —
+`reduce`, `apply`, `initial_state` and their helpers — and none of what the runtime counts with it
+(usage, medians, phone legs). `tests/wire/golden/call-log.state.json` is the state the golden log
+folds to, and the fold reaches it from any cut, through a gap carrying a snapshot, and past an
+entry this version cannot read (one line of `errors`, the fold going on).
+
 Every model is closed (`extra="forbid"`): a key nobody declared means the gateway speaks a newer
 wire than this package, and it is refused by name. A field this package needs lands in the
 runtime's wire first, then here by hand. `make drift` reads both with `ast` — every class's
@@ -145,6 +154,9 @@ It knows the wire, `websockets` and `httpx`.
 - **It reads nothing from the environment.** `Client(url, api_key, env)` is given all three.
 - **Every tool call gets exactly one `tool.result`** — an unknown tool and a tool that raised
   included — and every `dev.request` one `dev.answer`: a turn or an ask with no answer waits forever.
+- **Reading a log.** `history(call=…)` reads one page and its folded state; `observe(call=…)`
+  streams it as server-sent events, coming back from the last entry it saw after a drop with
+  `Last-Event-ID`, and raises only when the stream never opened.
 - **Leaving.** `drain` asks every agent to drain and waits for the tools running, up to 30 s; a
   stop from the org (`error` coded `stopped`, for no agent) closes the socket for good and goes
   to `on_stopped`; `on_entries` hands over every entry as the gateway wrote it.
