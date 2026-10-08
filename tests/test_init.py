@@ -4,7 +4,19 @@ import re
 
 import pinecall
 
-THE_DOOR = ["PinecallError", "WireError", "__version__"]
+THE_DOOR = [
+    "Agent",
+    "Change",
+    "DeclarationRefused",
+    "Logged",
+    "NotAStage",
+    "PinecallError",
+    "ToolFailed",
+    "UnauthoredWrite",
+    "WireError",
+    "__version__",
+    "state",
+]
 
 
 def test_the_door_gives_exactly_the_names_pinned_here() -> None:

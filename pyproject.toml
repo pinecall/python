@@ -103,3 +103,6 @@ reportImplicitOverride = true
 
 [tool.deptry]
 known_first_party = ["pinecall", "tests"]
+
+[tool.deptry.per_rule_ignores]
+DEP001 = ["annotationlib"]  # the standard library's from 3.14, imported only there
