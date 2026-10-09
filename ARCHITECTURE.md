@@ -29,7 +29,7 @@ one the person typed.
 ```
 src/pinecall/
   __init__.py                the door: what a stranger who types `import pinecall` may reach
-  _version.py                the version, written once; 0.0.0 until the human names a number
+  _version.py                the version, written once; a tag that says another is refused
   errors.py                  one root, `PinecallError`, and what is refused under it, by name
   agent.py                   `Agent`: the state's verbs (seal · snapshot · restore · start_in · collapse), the log
   _author.py                 who is writing right now — a `ContextVar`, per task, never a global

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.6 — The first release: an agent as a Python class (2026-10-09)
+
 - A frame sent from the loop could leave before frames a tool's thread had sent just before it.
   Every frame now leaves in the order it was sent, from any thread.
 - `docs/tutorial.md`: forty minutes from an empty directory to an agent that answers from your

@@ -63,8 +63,8 @@ answer.
 
 ## Five minutes
 
-**Not on PyPI yet.** Until the first release, install it from this repository:
-`uv add "pinecall @ git+https://github.com/pinecall/python"`. After it, `uv add pinecall`.
+`uv add pinecall`, or `pip install pinecall`. PyPI `pinecall` 0.1.0 to 0.1.5 are the runtime's
+releases, before it moved to `pinecall-runtime`: a project pins `pinecall>=0.1.6`.
 
 This package is a library: the verbs are the one `pinecall` CLI's, the same for every language. In
 a project laid out as `agents/<name>/agent.py`, with this package in its `.venv`:
