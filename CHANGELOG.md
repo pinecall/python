@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.1.7 — A call runs on the day a golden pinned (2026-10-09)
+
+- `call.today` is the day `call.started` names when a golden pinned one (`today`), so an agent
+  resolves "on Monday" against the golden's day, as the model does; the clock's day otherwise, as
+  before. The field needs runtime 0.1.10.
+
 ## 0.1.6 — The first release: an agent as a Python class (2026-10-09)
 
 - A frame sent from the loop could leave before frames a tool's thread had sent just before it.

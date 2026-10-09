@@ -40,6 +40,15 @@ def test_a_started_call_knows_its_line_and_is_active() -> None:
     assert call.contact.name == "Ana"
 
 
+def test_a_runs_call_runs_on_the_day_call_started_names() -> None:
+    call, _ = a_call()
+    pinned = {**STARTED, "run": "run_1", "today": "2026-09-17"}
+    call.take("call.started", CallStarted.read(pinned, "call.started"))
+    assert call.today == "2026-09-17"
+    call.take("call.started", CallStarted.read(STARTED, "call.started"))
+    assert call.today == "2026-09-17"
+
+
 def test_a_call_handed_over_keeps_the_day_it_opened_its_state_and_its_code() -> None:
     call, _ = a_call()
     handed: JsonObject = {

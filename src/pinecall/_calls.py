@@ -146,12 +146,14 @@ class Call:
             self.status = "active"
             self._line(event)
             self.medium = event.medium
+            if event.today is not None:
+                self.today = event.today
         elif isinstance(event, CallAttached):
             self.status = "active"
             self._line(event.started)
             self.medium = event.started.medium
             self.state = dict(event.state)
-            self.today = day_of(event.started.started_at)
+            self.today = event.started.today or day_of(event.started.started_at)
             self.claimed = event.claimed
         elif isinstance(event, StateChanged):
             self.state = dict(event.state)
