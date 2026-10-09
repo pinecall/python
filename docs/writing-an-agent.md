@@ -10,8 +10,8 @@ from pinecall import Agent, state, tool
 
 
 class ClinicaNorte(Agent):
-    """Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas.
-    Todo lo que dices se lee en voz alta: sin listas, sin markdown."""
+    """You are the front desk of Clínica Norte. Formal, short sentences.
+    Everything you say is read aloud: no lists, no markdown."""
 ```
 
 That docstring is the `identity` block of the prompt — the first of the static blocks, which never
@@ -107,13 +107,13 @@ own into the call's log.
 class ClinicaNorte(Agent):
     @tool(stage="identify", pii=("name", "phone"))
     def find_patient(self, name: str, phone: str) -> dict | None:
-        """Busca la ficha del paciente por su nombre completo y su teléfono.
+        """Finds the patient's file by their full name and phone.
 
-        Llámala sólo cuando el paciente te haya dicho los dos.
+        Call it only once the patient has given you both.
 
         Args:
-            name: el nombre completo, como lo dijo
-            phone: el teléfono, como lo dijo
+            name: the full name, as they said it
+            phone: the phone number, as they said it
         """
         self.patient = self.agenda.find(name, phone)
         if self.patient:
@@ -151,7 +151,7 @@ class ClinicaNorte(Agent):
             self.stage = "choose"
 
     def on_end(self, call: CallWorld) -> None:  # a line logged here still lands
-        self.log("resultado", {"fase": self.stage})
+        self.log("outcome", {"stage": self.stage})
 
     def on_event(
         self, name: str, data: JsonObject, meta: EventMeta
@@ -171,20 +171,20 @@ Inside a tool or a hook, `self.call` is the live call; outside one it says so ra
 `None`.
 
 ```python
-self.say("Un momento, que lo miro.")  # an Answer: True once the turn lands, False after 30 s
-self.reply("Dile que ya está reservado.")  # the model speaks, guided by words nobody hears
+self.say("One moment, let me check.")  # an Answer: True once the turn lands, False after 30 s
+self.reply("Tell them it is booked.")  # the model speaks, guided by words nobody hears
 self.call.send("cart", {"total": 42})  # a payload to the browsers in the room
 self.call.participant(identity).mute()  # and .remove()
 self.call.invite("+34910000001")  # a phone leg; invite(identity, "participant") for a seat
 self.call.transfer("+34910000002")  # an Answer: a Transferred, ok=False if they are still here
-self.call.attention("quiere hablar con una persona", wait_s=60)  # an Attended: who took the line
+self.call.attention("wants to talk to a person", wait_s=60)  # an Attended: who took the line
 self.call.hold()  # and unhold()
 self.call.dtmf("1#")
 self.call.claim("4821")  # the page showing 4821 follows this call; call.claimed says so
-self.call.callback("+34600000001", when="mañana por la tarde", note="presupuesto")
-self.call.opt_out("no quiere más llamadas")  # their number joins the do-not-call list
+self.call.callback("+34600000001", when="tomorrow afternoon", note="a quote")
+self.call.opt_out("does not want more calls")  # their number joins the do-not-call list
 self.call.hangup("done")
-self.knowledge.search("horario de verano", k=3)  # an Answer: the chunks, searched for this call
+self.knowledge.search("summer opening hours", k=3)  # an Answer: the chunks, searched for this call
 ```
 
 **A verb that waits answers with an `Answer`.** In an `async def` tool, `await` it; in a `def`
@@ -207,21 +207,21 @@ from pinecall import Agent, Drawing, Who, panel
 
 
 class ClinicaNorte(Agent):
-    @panel("Cliente")
-    def ficha(self, who: Who, draw: Drawing) -> None:
+    @panel("Customer")
+    def file(self, who: Who, draw: Drawing) -> None:
         client = self.crm.find(who.contact)
         if client is None:
-            with draw.panel("Sin ficha"):
-                draw.text("No está en el CRM.")
+            with draw.panel("Not on file"):
+                draw.text("Not in the CRM.")
             return
         with draw.panel(client.name):
             with draw.rows():
-                draw.row("Alta", client.since)
-                draw.row("Zona", client.area)
-            draw.stat("Servicios", len(client.jobs))
-            draw.table(["fecha", "servicio", "importe"], client.jobs)
+                draw.row("Since", client.since)
+                draw.row("Area", client.area)
+            draw.stat("Jobs", len(client.jobs))
+            draw.table(["date", "job", "amount"], client.jobs)
             draw.badge(
-                "con saldo" if client.debt else "al día", tone="warn" if client.debt else "good"
+                "owes" if client.debt else "paid up", tone="warn" if client.debt else "good"
             )
 ```
 
@@ -251,6 +251,6 @@ call, and never as a refusal from a gateway:
 | a tool named like the agent's own method | `a tool named so would hide the agent's own log` |
 | an `accepts` sender that is not `app` or `participant` | `'browser' sends nothing; an event comes from app or participant` |
 | `state(pii=True, visibility="public")` | `a field is pii or public, not both` |
-| two `@panel` methods | `declares two panels (Ficha and Otra); a class draws one panel` |
+| two `@panel` methods | `declares two panels (Customer and Orders); a class draws one panel` |
 | a `@panel` method that does not take `(self, who, draw)` | `a panel draws with (self, who, draw)` |
 | `voice`, `llm`, `stt`, `language`, `greeting`, `hangup`, `says`, `hears`, `memory`, `record`, `knowledge`, `docs` | `` `<field>` is the world's now, not the class's: <verb> — remove it from the class`` |

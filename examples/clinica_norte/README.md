@@ -1,62 +1,68 @@
 # Clínica Norte
 
-Un agente entero, escrito como lo escribiría un cliente, con el layout del CLI único: el mismo
-agente que el ejemplo de TypeScript (`agents/examples/clinica-norte`) y el de Ruby
-(`ruby/examples/clinica_norte`), con la misma agenda, los mismos documentos y los mismos once
-goldens, en Python. Su prompt es, byte a byte, el del ejemplo de Ruby para el estado de cada golden.
+A whole agent, written the way a customer writes one, on the one CLI's layout: the same agent as
+the TypeScript example (`agents/examples/clinica-norte`) and the Ruby one
+(`ruby/examples/clinica_norte`), with the same agenda, the same documents and the same eleven
+goldens, in Python. Its prompt is, byte for byte, the Ruby example's for every golden's state.
+
+The clinic is Spanish and so is everything its callers hear: the class's docstrings, the view and
+the goldens are in Spanish on purpose. The framework's own rules are English, and tell the model to
+answer in the caller's language.
 
 ```
-agents/clinica-norte/agent.py                    la clase: estado, fases, herramientas
-agents/clinica-norte/agenda.py                   la agenda de la clínica, inventada y fija: lo que en producción sería su API
-agents/clinica-norte/views/clinica-norte.jinja   la vista: el bloque `view`, como función del estado
-docs/clinica-norte/*.md                          de lo que responde por turno: `pinecall docs push` los sube
-test/clinica-norte/test_clinica.py               ring 0: sin red, sin clave, sin modelo, sin gateway
-test/clinica-norte/goldens/                      ring 1: once conversaciones, más docs.json y memory.json
-test/clinica-norte/memory/                       los casos de extracción que `pinecall remember` corre
+agents/clinica-norte/agent.py                    the class: state, stages, tools
+agents/clinica-norte/agenda.py                   the clinic's agenda, made up and fixed: what its API would be in production
+agents/clinica-norte/views/clinica-norte.jinja   the view: the `view` block, as a function of the state
+docs/clinica-norte/*.md                          what it answers from, per turn: `pinecall docs push` uploads them
+test/clinica-norte/test_clinica.py               ring 0: no network, no key, no model, no gateway
+test/clinica-norte/goldens/                      ring 1: eleven conversations, plus docs.json and memory.json
+test/clinica-norte/memory/                       the extraction cases `pinecall remember` runs
 ```
 
-La carpeta se llama como el slug del agente: `agents/clinica-norte/` es el agente `clinica-norte`.
-Como un guion no se importa, el test carga la clase con `pinecall.testing.load`, igual que la
-carga `pinecall start`: su carpeta como paquete, así que `agent.py` importa `from .agenda import …`.
+The folder is named after the agent's slug: `agents/clinica-norte/` is the agent `clinica-norte`.
+A folder with a dash cannot be imported, so the test loads the class with `pinecall.testing.load`,
+the way `pinecall start` loads it: its folder a package, so `agent.py` imports
+`from .agenda import …`.
 
 ```bash
-# la suite del cliente, como la corre él (desde la raíz del paquete: make examples)
+# the customer's own suite, run the way they run it (from the package's root: make examples)
 uv run pytest examples/clinica_norte
 
-# el resto, con el CLI único (npm i -g pinecall), desde esta carpeta
+# the rest, with the one CLI (npm i -g pinecall), from this folder
 pinecall prompt --state test/clinica-norte/goldens/no-reserva-antes-del-si.json
 pinecall chat
-pinecall test                    # ring 1: make ring1 desde la raíz del paquete
+pinecall test                    # ring 1: make ring1 from the package's root
 pinecall start
 ```
 
-El CLI no carga la clase: arranca `python -m pinecall.serve` con el intérprete del propio proyecto,
-`.venv/bin/python` ([../../docs/production.md](../../docs/production.md)). En este checkout ese
-`.venv` es el del paquete: `make ring1` lo enlaza antes de correr los goldens.
+The CLI never loads the class: it starts `python -m pinecall.serve` with the project's own
+interpreter, `.venv/bin/python` ([../../docs/production.md](../../docs/production.md)). In this
+checkout that `.venv` is the package's: `make ring1` links it before running the goldens.
 
-Lo que la recepción se sabe de memoria — horarios, precios, qué necesita autorización — no está en
-este repo: se escribe en la consola, Settings ▸ Knowledge (o `pinecall agent knowledge edit`), y el
-modelo lo lee entero en cada llamada. La voz, el modelo, el saludo, el idioma, lo que la memoria
-guarda (`pinecall memory policy`) y la base que busca por turno (`pinecall docs attach
-clinica-norte --k 4`) son del mundo, no de la clase, y una clase que todavía los declara se
-rechaza al importarse.
+What the front desk knows by heart — hours, prices, what needs an authorisation — is not in this
+repository: it is written in the console, Settings ▸ Knowledge (or `pinecall agent knowledge
+edit`), and the model reads it whole on every call. The voice, the model, the greeting, the
+language, what memory keeps (`pinecall memory policy`) and the base it searches per turn
+(`pinecall docs attach clinica-norte --k 4`) are the world's, not the class's, and a class that
+still declares one is refused on import.
 
-## Lo que este ejemplo enseña
+## What this example teaches
 
-- **Una fase mueve las herramientas.** `stage: Literal["identify", "choose", "book", "done"]` es un
-  campo del estado como cualquier otro, y `stage=` en una tool es azúcar sobre `when=`.
-- **Un hueco se reserva por su id, no por su hora.** Dos huecos a la misma hora con distinto
-  profesional son indistinguibles en palabras; un id no se parece a otro, y uno que la agenda no
-  ofreció se rechaza con la lista de los que sí.
-- **`propose` y `book` son dos momentos distintos.** Sin el campo `proposed`, la vista no sabe si
-  toca leerle la hora o reservarla, y un modelo obediente vuelve a leérsela en vez de reservar.
-- **El día se resuelve a una fecha en el código.** «El martes» dicho un jueves es una fecha y sólo
-  una; un día sin agenda vuelve vacío, y la vista lo nombra.
-- **`confirm=` es lo que hace `book` irreversible en el cable.** La plataforma lee la frase después
-  de la reserva, con lo que la tool devolvió.
-- **`preview=2` corta lo que ve el modelo, no lo que guarda el estado.**
-- **La agenda es un colaborador, no estado.** Un `cached_property`: cada llamada tiene la suya, y no
-  aparece en ningún snapshot.
-- **La vista es solo lo que escribe la clínica.** Lo que la memoria recuerda y lo que la base
-  responde llegan al modelo como resultado de una herramienta, en el historial. La vista pregunta
-  `remembers("médico habitual")` y decide una frase suya con la respuesta.
+- **A stage moves the tools.** `stage: Literal["identify", "choose", "book", "done"]` is a state
+  field like any other, and `stage=` on a tool is sugar over `when=`.
+- **A slot is booked by its id, never by its time.** Two slots at the same hour with different
+  professionals are indistinguishable in words; one id looks like no other, and one the agenda
+  never offered is refused with the list of those it did.
+- **`propose` and `book` are two moments.** Without the `proposed` field the view cannot tell
+  whether to read the time back or to book it, and an obedient model reads it back again instead
+  of booking.
+- **The day is resolved to a date in code.** "Tuesday" said on a Thursday is one date and one
+  only; a day with no agenda comes back empty, and the view names it.
+- **`confirm=` is what makes `book` irreversible on the wire.** The platform reads the sentence
+  after the booking, with what the tool returned.
+- **`preview=2` cuts what the model sees, not what the state keeps.**
+- **The agenda is a collaborator, not state.** A `cached_property`: each call has its own, and it
+  appears in no snapshot.
+- **The view is only what the clinic writes.** What memory recalled and what the base answered
+  reach the model as a tool result, in the history. The view asks `remembers("médico habitual")`
+  and decides on a sentence of its own with the answer.

@@ -13,7 +13,7 @@ from clinica import agenda  # your own system: a CRM, an API, a database
 
 
 class ClinicaNorte(Agent):
-    """Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas."""
+    """You are the front desk of Clínica Norte. Formal, short sentences."""
 
     stage: Literal["identify", "book"] = "identify"
     patient: dict[str, str] | None = state(None, pii=True)
@@ -21,16 +21,16 @@ class ClinicaNorte(Agent):
 
     @tool(stage="identify", pii=("name", "phone"))
     def find_patient(self, name: str, phone: str) -> dict[str, str] | None:
-        """Busca al paciente por nombre y teléfono. Pide los dos antes de llamarla."""
-        self.patient = agenda.buscar(name, phone)
+        """Finds the patient by name and phone. Ask for both before calling it."""
+        self.patient = agenda.find(name, phone)
         if self.patient:
             self.stage = "book"
         return self.patient
 
     @tool(stage="book", preview=2)
     def free_slots(self, day: str) -> list[dict[str, str]]:
-        """Horas libres de un día."""
-        self.slots = agenda.libres(day)
+        """Free slots on one day."""
+        self.slots = agenda.free(day)
         return self.slots
 ```
 
@@ -38,16 +38,16 @@ class ClinicaNorte(Agent):
 
 ```jinja
 {% if stage == "identify" %}
-Saluda y pide nombre y teléfono. Nada más hasta identificar al paciente.
+Greet the caller and ask for their name and phone. Nothing else until the patient is identified.
 {% endif %}
-{% if remembers("médico habitual") %}
-Ofrece primero las horas de su médico habitual.
+{% if remembers("usual doctor") %}
+Offer their usual doctor's slots first.
 {% endif %}
 {% if slots %}
-## Horas libres, en orden
+## Free slots, in order
 
-{% for hueco in slots %}
-{{ hueco.cuando }} con {{ hueco.doctor }}
+{% for slot in slots %}
+{{ slot.when }} with {{ slot.doctor }}
 {% endfor %}
 {% endif %}
 ```
@@ -58,7 +58,7 @@ its text changes.
 
 Memory and knowledge-base results never enter the prompt. The platform runs `recall` and `search`
 and returns their results to the model as tool results, so retrieved text is treated as data, not
-instructions. A view can ask `remembers("médico habitual")` and write its own sentence about the
+instructions. A view can ask `remembers("usual doctor")` and write its own sentence about the
 answer.
 
 ## Five minutes
@@ -110,7 +110,7 @@ async def main() -> None:
 
     def heard(event, call):  # every turn.user of every call this socket serves
         if isinstance(event, UserTurnEnded):
-            call.say(f"Le he oído: {event.text}")
+            call.say(f"I heard: {event.text}")
 
     agent.on("turn.user", heard)
     await pc.connect()
@@ -134,7 +134,7 @@ with Gateway() as pc:
     call = pc.call_started(from_="+34600123456")
     call.tool("find_patient", name="Marta Ruiz", phone="600123456")
 
-    assert "Saluda y pide nombre" not in call.prompt
+    assert "ask for their name" not in call.prompt
     assert call.tools == ["free_slots"]
 ```
 

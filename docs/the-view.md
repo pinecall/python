@@ -32,21 +32,21 @@ agents/clinica-norte/
 
 ```jinja
 {% if stage == "identify" %}
-Saluda y pide nombre y teléfono. Nada más hasta identificar al paciente.
+Greet the caller and ask for their name and phone. Nothing else until the patient is identified.
 {% endif %}
 
 {% if identified %}
-Hablas con {{ patient.name }}, ya en la ficha: no vuelvas a pedirle el nombre.
+You are talking to {{ patient.name }}, already on file: do not ask for their name again.
 {% endif %}
 
-{% if remembers("médico habitual") %}
-Ofrece primero las horas de su médico habitual.
+{% if remembers("usual doctor") %}
+Offer their usual doctor's slots first.
 {% endif %}
 
 {% if call.channel == "phone" %}
-Ofrece como máximo dos horas.
+Offer at most two slots.
 {% else %}
-Muestra hasta cinco horas, una por línea.
+Show up to five slots, one per line.
 {% endif %}
 ```
 
@@ -71,7 +71,7 @@ Small enough to live inside the class, it can:
 class Recepcion(Agent):
     view_template = """
 {% if stage == "identify" %}
-Saluda y pide nombre y teléfono.
+Greet the caller and ask for their name and phone.
 {% endif %}
 """
 ```
@@ -80,7 +80,7 @@ A subclass with no view of its own renders its parent's.
 
 ## What the agent already knows about this caller
 
-`remembers("médico habitual")` answers whether memory holds something about this caller matching
+`remembers("usual doctor")` answers whether memory holds something about this caller matching
 those words. The runtime supplies the facts; a render nobody gave any — `pinecall prompt`, a test
 that says nothing about it — answers no rather than guessing.
 
@@ -89,7 +89,7 @@ appears in the prompt: it reached the model as the result of the platform's `rec
 history. What the view adds is the sentence *you* want said when the answer is yes.
 
 ```python
-render(agent, remembered=["su médico habitual es la doctora Vidal"])["view"]
+render(agent, remembered=["their usual doctor is Dr. Vidal"])["view"]
 ```
 
 ## Reading the prompt
@@ -115,7 +115,7 @@ With no `Line`, the prompt is a phone call's.
 ## Collapsing a long call
 
 ```python
-self.collapse("La paciente ya está identificada y ha visto las horas del martes.")
+self.collapse("The patient is identified and has heard Tuesday's slots.")
 ```
 
 The state is untouched. What collapses is the record of how it got here, which is what a long call

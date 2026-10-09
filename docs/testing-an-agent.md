@@ -13,12 +13,12 @@ from pinecall.testing import Gateway, load
 ClinicaNorte = load(Path(__file__).parents[2] / "agents" / "clinica-norte" / "agent.py")
 
 
-def test_una_paciente_de_la_ficha_no_tiene_que_decir_su_nombre_otra_vez() -> None:
+def test_a_patient_on_file_is_not_asked_for_their_name_again() -> None:
     with Gateway() as pc:
         pc.mount(ClinicaNorte)
         call = pc.call_started(from_="+34600123456")
 
-        assert "Hablas con Marta Ruiz" in call.prompt
+        assert "You are talking to Marta Ruiz" in call.prompt
         assert call.tools == ["free_slots"]
 ```
 
@@ -32,8 +32,8 @@ agent has finished answering it. It needs no plugin: a plain `def test_…` driv
 | you write | what happens |
 |---|---|
 | `pc.call_started(from_=, channel=, medium=, id_=, state=)` | a call opens, `on_call` runs, then `state=` (what `call.started` carries when a golden or a persona opened it) is written over the hook's, and the first prompt goes out. Returns the handle |
-| `call.tool("free_slots", day="martes")` | the model calls a tool. Returns the `tool.result` the agent sent back: `output`, or `error` |
-| `call.said("el martes me viene bien")` | the caller said something |
+| `call.tool("free_slots", day="Tuesday")` | the model calls a tool. Returns the `tool.result` the agent sent back: `output`, or `error` |
+| `call.said("Tuesday works for me")` | the caller said something |
 | `call.fact("agenda.changed", {"slots": []})` | a fact from your backend; `source="participant"` for a browser |
 | `call.ended()` | the call is over, `on_end` runs |
 | `pc.call_attached(state, id_=)` | a call handed over mid-conversation: no `on_call`, the state the gateway kept, the whole prompt sent |
@@ -57,22 +57,22 @@ agent has finished answering it. It needs no plugin: a plain `def test_…` driv
 The things a prompt makes true, not the things a method returns:
 
 ```python
-def test_el_telefono_pide_ofrecer_dos_horas() -> None:
+def test_a_phone_call_offers_two_slots() -> None:
     with Gateway() as pc:
         pc.mount(ClinicaNorte)
         call = pc.call_started(from_="+34600123456", channel="phone")
-        call.tool("free_slots", day="el martes", specialty="medicina de familia")
+        call.tool("free_slots", day="Tuesday", specialty="family medicine")
 
-        assert "Ofrece como máximo dos" in call.prompt
+        assert "Offer at most two" in call.prompt
 
 
-def test_una_hora_que_nadie_ofrecio_se_rechaza_en_vez_de_reservarse() -> None:
+def test_a_slot_nobody_offered_is_refused_instead_of_booked() -> None:
     with Gateway() as pc:
         pc.mount(ClinicaNorte)
         call = pc.call_started(from_="+34600123456")
-        call.tool("free_slots", day="el martes", specialty="medicina de familia")
+        call.tool("free_slots", day="Tuesday", specialty="family medicine")
 
-        assert "no es una de las horas" in str(call.tool("propose", slot="el domingo")["error"])
+        assert "is not one of the slots" in str(call.tool("propose", slot="Sunday")["error"])
 ```
 
 A tool that raises is not a broken test: the model is waiting for an answer and reads the message
@@ -88,10 +88,10 @@ from pinecall import CallLine, CallWorld, render
 
 agent = ClinicaNorte().seal()
 agent.serving(CallWorld(CallLine(id="CA_1", channel="phone", today="2026-09-17")))
-agent.start_in({"stage": "book", "slots": [hueco]})
+agent.start_in({"stage": "book", "slots": [slot]})
 
-assert "el martes a las diez" in render(agent)["view"]
-assert agent.run_tool("propose", {"slot": "s-1"}) == hueco
+assert "Tuesday at ten" in render(agent)["view"]
+assert agent.run_tool("propose", {"slot": "s-1"}) == slot
 ```
 
 `start_in` writes the fields a case names over the ones the class gave itself; `restore` means

@@ -39,15 +39,15 @@ from pinecall import Agent, state, tool
 
 
 class ClinicaNorte(Agent):
-    """Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas."""
+    """You are the front desk of Clínica Norte. Formal, short sentences."""
 
     stage: Literal["identify", "resolve"] = "identify"
     patient: dict[str, str] | None = state(None, pii=True)
 
     @tool(stage="identify", pii=("name", "phone"))
     def find_patient(self, name: str, phone: str) -> dict[str, str]:
-        """Busca al paciente por nombre y teléfono. Pide los dos antes de llamarla."""
-        self.patient = {"nombre": name, "telefono": phone}
+        """Finds the patient by name and phone. Ask for both before calling it."""
+        self.patient = {"name": name, "phone": phone}
         self.stage = "resolve"
         return self.patient
 ```
@@ -57,10 +57,10 @@ state:
 
 ```jinja
 {% if stage == "identify" %}
-Saluda y pide nombre y teléfono. Nada más hasta tenerlos.
+Greet the caller and ask for their name and phone. Nothing else until you have both.
 {% endif %}
 {% if patient %}
-Hablas con {{ patient.nombre }}, ya en la ficha. No se los vuelvas a pedir.
+You are talking to {{ patient.name }}, already on file. Do not ask for them again.
 {% endif %}
 ```
 
@@ -87,7 +87,7 @@ Before running anything, look at what the model would read. No key, no gateway, 
 ```
 $ pinecall prompt
 ── identity (static) ──
-Eres la recepción de Clínica Norte. Hablas de usted, con frases cortas.
+You are the front desk of Clínica Norte. Formal, short sentences.
 
 <rules>
 - Invent nothing: if it did not come from a tool or from the knowledge, do not say it.
@@ -108,13 +108,13 @@ You are on a phone call. Everything you write is read aloud by a voice: short sp
 
 ── tools (static) ──
 <tools>
-- find_patient: Busca al paciente por nombre y teléfono. Pide los dos antes de llamarla.
+- find_patient: Finds the patient by name and phone. Ask for both before calling it.
 </tools>
 
 ── history ──
 
 ── view (dynamic) ──
-Saluda y pide nombre y teléfono. Nada más hasta tenerlos.
+Greet the caller and ask for their name and phone. Nothing else until you have both.
 ```
 
 Four named blocks in two regions, in the one order they are ever sent. Everything above `history` is
@@ -171,7 +171,7 @@ That is all: no vector-database client, no `search` call in your code, no `if` t
 look.
 
 **What the push did.** Each file was cut at its headings, each chunk prefixed with its heading path
-(`tarifas.md › Tarifas › Revisión`), and embedded one document at a time, so a chunk was embedded
+(`prices.md › Prices › Check-up`), and embedded one document at a time, so a chunk was embedded
 seeing its neighbours. The vectors went into Postgres, an HNSW index beside a BM25 index.
 
 **What happens on a turn.** The platform runs a `search` itself; the two indexes are asked in
@@ -188,7 +188,7 @@ A push replaces the base whole, so push again after every edit. `pinecall docs l
 ## 6. Memory: what it keeps between calls
 
 ```bash
-pinecall memory policy --remember "cómo prefiere que le llamen" "alergias" "su médico habitual" --forget "pagos"
+pinecall memory policy --remember "how they like to be addressed" "allergies" "their usual doctor" --forget "payments"
 ```
 
 The policy is the world's, not the class's. `remember` is the vocabulary, **in your own words**, of
@@ -214,8 +214,8 @@ pinecall memory forget +34600123456   # the one verb that removes rows
 The view may ask memory a question and say a sentence of its own about the answer:
 
 ```jinja
-{% if remembers("médico habitual") %}
-Ofrece primero las horas de su médico habitual.
+{% if remembers("usual doctor") %}
+Offer their usual doctor's slots first.
 {% endif %}
 ```
 
@@ -224,10 +224,10 @@ Ofrece primero las horas de su médico habitual.
 ```
 system:   identity · knowledge · tools           ← cached, unchanged while the call runs
 messages: …the turns…
-          assistant tool_use  recall  {"contact":"+34600123456","query":"¿Cuánto cuesta…"}
-          user      tool_result       {"facts":[{"text":"Prefiere que le llamen Marta.", …}]}
-          assistant tool_use  search  {"query":"¿Cuánto cuesta una revisión de medicina general?"}
-          user      tool_result       {"chunks":[{"path":"tarifas.md", "heading":"Tarifas › Revisión", …}]}
+          assistant tool_use  recall  {"contact":"+34600123456","query":"How much is…"}
+          user      tool_result       {"facts":[{"text":"Prefers to be called Marta.", …}]}
+          assistant tool_use  search  {"query":"How much is a general check-up?"}
+          user      tool_result       {"chunks":[{"path":"prices.md", "heading":"Prices › Check-up", …}]}
           user      <instructions> what the view rendered </instructions>
 ```
 
@@ -296,15 +296,15 @@ from pinecall.testing import Gateway, load
 ClinicaNorte = load(Path(__file__).parents[2] / "agents" / "clinica-norte" / "agent.py")
 
 
-def test_una_vez_identificada_el_prompt_deja_de_pedirle_el_nombre() -> None:
+def test_once_identified_the_prompt_stops_asking_for_the_name() -> None:
     with Gateway() as pc:
         pc.mount(ClinicaNorte)
         call = pc.call_started(from_="+34600123456")
 
         call.tool("find_patient", name="Marta", phone="600123456")
 
-        assert "Hablas con Marta" in call.prompt
-        assert "pide nombre y teléfono" not in call.prompt
+        assert "talking to Marta" in call.prompt
+        assert "ask for their name" not in call.prompt
 ```
 
 ```bash
