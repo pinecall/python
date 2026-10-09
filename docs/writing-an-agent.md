@@ -221,9 +221,7 @@ class ClinicaNorte(Agent):
                 draw.row("Area", client.area)
             draw.stat("Jobs", len(client.jobs))
             draw.table(["date", "job", "amount"], client.jobs)
-            draw.badge(
-                "owes" if client.debt else "paid up", tone="warn" if client.debt else "good"
-            )
+            draw.badge("owes" if client.debt else "paid up", tone="warn" if client.debt else "good")
 ```
 
 It is the TypeScript package's `@view`, and what reaches the console is the same: a tree of the

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.1.9 — The release CI refused for a format (2026-10-09)
+
+- One example file was not as `ruff format` writes it, and CI refused 0.1.7 and 0.1.8 for it, so
+  neither reached PyPI. This release carries both: a call runs on the day a golden pinned, and a
+  tool announces itself.
+
 ## 0.1.8 — A tool announces itself (2026-10-09)
 
 - `@tool(announce="Let me check the agenda.")`: what the agent says as the tool starts, when the
