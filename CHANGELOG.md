@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.1.8 — A tool announces itself (2026-10-09)
+
+- `@tool(announce="Let me check the agenda.")`: what the agent says as the tool starts, when the
+  model's turn said nothing itself; a turn that spoke and then called the tool is not announced
+  twice. Needs runtime 0.1.11.
+
 ## 0.1.7 — A call runs on the day a golden pinned (2026-10-09)
 
 - `call.today` is the day `call.started` names when a golden pinned one (`today`), so an agent

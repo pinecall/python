@@ -74,7 +74,7 @@ def spec_of(
         "parameters": parameters,
         "side_effect": "irreversible" if said.get("confirm") else "read",
     }
-    spec |= {key: said[key] for key in ("confirm", "pii") if said.get(key) is not None}
+    spec |= {key: said[key] for key in ("confirm", "announce", "pii") if said.get(key) is not None}
     if said.get("timeout") is not None:
         spec["timeout_s"] = said["timeout"]
     try:

@@ -27,7 +27,7 @@ class Clinica(Agent):
         self.stage = "book"
         return self.patient
 
-    @tool(stage="book", preview=2)
+    @tool(stage="book", preview=2, announce="Voy a mirar la agenda.")
     async def free_slots(self, day: str, how_many: int = 3) -> list[str]:
         """Horas libres de un día."""
         return [f"{day} {10 + at}:00" for at in range(how_many)]
@@ -68,6 +68,11 @@ def test_the_parameters_are_the_methods_own_with_their_types_and_defaults(clinic
         "required": ["day"],
         "additionalProperties": False,
     }
+
+
+def test_an_announcement_travels_as_the_wire_carries_it(clinica: Clinica) -> None:
+    assert spec_of(clinica, "free_slots").announce == "Voy a mirar la agenda."
+    assert spec_of(clinica, "book").announce is None
 
 
 def test_a_read_back_is_what_makes_a_tool_irreversible_on_the_wire(clinica: Clinica) -> None:

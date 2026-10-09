@@ -23,6 +23,7 @@ class ToolOptions(TypedDict, total=False):
     stage: str | Sequence[str]
     when: Callable[[Any], object]
     confirm: str
+    announce: str
     preview: int
     pii: Sequence[str]
     timeout: float
@@ -108,6 +109,7 @@ def declaring(
     arguments = _spec.arguments_model(name, method)
     said: dict[str, object] = {
         "confirm": options.get("confirm"),
+        "announce": options.get("announce"),
         "pii": None if pii is None else tuple(pii),
         "timeout": options.get("timeout"),
     }
