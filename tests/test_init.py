@@ -28,11 +28,15 @@ THE_DOOR = [
     "WireError",
     "__version__",
     "hold",
+    "knowledge",
+    "llm",
     "panel",
     "render",
     "show_prompt",
     "state",
+    "stt",
     "tool",
+    "voice",
 ]
 
 

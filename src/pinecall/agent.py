@@ -85,7 +85,7 @@ class Agent:
     def __init_subclass__(cls, **kwargs: object) -> None:
         """Read the class once, as it is created, and refuse what the gateway would refuse."""
         super().__init_subclass__(**kwargs)
-        _config.refuse_the_worlds(cls)
+        _config.refuse_the_environment(cls)
         cls._pinecall_fields = _state.fields_of(cls, Agent, cls._pinecall_fields)
         cls._pinecall_events = _accepts.accepted(cls, cls._pinecall_events)
         # Not inherited: a panel is the class's own.

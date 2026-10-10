@@ -29,32 +29,63 @@ remembers. It never changes during a call and no view renders it.
 | `slug = "front-desk"` | the name the agent registers as; left out, the class's name in kebab-case (`ClinicaNorte` → `clinica-norte`) |
 | `accepts = {"slot.released": ["app"]}` | the outside events the agent takes, and from whom: `app` is your backend, `participant` a browser in the call |
 
-### The world's, not the class's
+### The environment: the settings', or the class's
 
-Everything the agent **runs on** is the world's: set per world, versioned, with who set it and
-why, and changed without a deploy — by `pinecall agent set`, the console's Settings tab, or the
-verb the table names. A class that still declares one of these, written or only annotated, is
-refused when the class is created — on the file's own import, before a prompt is printed or a
-gateway is knocked at — with the verb that sets it now:
+Everything the agent **runs on** is its settings': set per world, versioned, with who set it and
+why, and changed without a deploy — by `pinecall agent set`, the console's Configure screen, or the
+verb the table names. The class may declare any of them instead, and **what the class declares
+wins**: the settings of that field are not read for the agent, the console shows it locked, "set by
+the class", and a `pinecall agent set` of it is refused naming the class. Take it out of the class
+and deploy, and the settings apply again.
 
+```python
+from typing import ClassVar
+
+from pinecall import Agent, llm, stt, voice
+
+
+@voice("cartesia", "a0e99841-438c-4a64-b679-ae501e7d6091", model="sonic-2")
+@llm(
+    "openai/gpt-5.4-mini", temperature=0.3, builds="responses.LLM", options={"use_websocket": True}
+)
+@stt("deepgram/flux-general-multi")
+class ClinicaNorte(Agent):
+    """Recepción de Clínica Norte: da, cambia y cancela turnos."""
+
+    language = "es"
+    greeting: ClassVar = {"say": "Clínica Norte, buenas, ¿en qué le ayudo?"}
 ```
-`voice` is the world's now, not the class's: pinecall agent set --voice <name> — remove it from the class
-```
 
-| field | what it is | where it is set |
-|---|---|---|
-| `voice` | a voice **by name** — the platform resolves it to a vendor and an id | `pinecall agent set --voice` |
-| `llm` | `haiku`, `sonnet`, `opus`, or `vendor/model` | `pinecall agent set --llm` |
-| `stt` | the ears: `deepgram` (Flux), `soniox`, or `vendor/model` | `pinecall agent set --stt` |
-| `language` | the language the call is in | `pinecall agent set --language` |
-| `greeting` | how the call opens: the words, or what the model reads before finding its own | `pinecall agent set --greeting '…'` · `--reply '…'` |
-| `hangup` | whether the model may end the call itself, and when, in your words | `pinecall agent set --hangup '…'` |
-| `says` | how a word the voice would misread is said: `DKV` → `de ka uve` | `pinecall lexicon add <word> --say '…'` |
-| `hears` | the words the ears must know: names, brands, the doctor's surname | `pinecall lexicon hear <word> …` |
-| `memory` | what to remember about a caller across calls, and what never to | `pinecall memory policy --remember '…' --forget '…'` |
-| `record` | whether the call is recorded | `pinecall agent set --record on\|off` |
-| `knowledge` | what the agent knows by heart: a page of Markdown, read whole on every call | `pinecall agent knowledge edit` |
-| `docs` | the bases the agent searches per turn | `pinecall docs push`, then `pinecall docs attach <base>` |
+The three models and `knowledge` are decorators; the rest are class attributes, plain or annotated
+`ClassVar`. An attribute annotated any other way is the call's state, so one of these written that
+way is refused when the class is created, with how to declare it; and `knowledge` as an attribute
+would hide `self.knowledge.search`, so it is refused for `@knowledge(path=…, text=…)`.
+
+`@llm` and `@stt` take `vendor/model` or a vendor alone; `@voice` the vendor and its own id for the
+voice. Each takes `builds=`, a class of the vendor's LiveKit plugin other than its default (a dot
+reaches into a module of it: `responses.LLM` is OpenAI's Responses API, and `use_websocket` its
+WebSocket), and `options=`, that class's keyword arguments as the plugin names them, passed as given
+and over Pinecall's. **Both run only on your org's own key for that vendor**: on a key Pinecall lends
+they are refused when the agent registers, naming `pinecall providers add <vendor>`, since an option
+can point the plugin at another server. `@llm` also takes `temperature=`, which runs on any key. A
+vendor that is not installed, or does not do the stage, is refused at registration. `@llm` fixes the
+whole model: with it on the class, `--temperature`, `--llm-builds` and `--llm-option` are refused too.
+
+| field | what it is | on the class | or in the settings |
+|---|---|---|---|
+| `voice` | the voice: its vendor and the vendor's id | `@voice("<vendor>", "<id>", model=…)` | `pinecall agent set --voice` |
+| `llm` | the model that answers, and its temperature | `@llm("<vendor>/<model>", temperature=0.3)` | `pinecall agent set --llm` |
+| `stt` | the ears | `@stt("<vendor>/<model>")` | `pinecall agent set --stt` |
+| `language` | the language the call is in | `language = "es"` | `pinecall agent set --language` |
+| `greeting` | how the call opens: the words, or what the model reads before finding its own | `greeting: ClassVar = {"say": "…"}` · `{"reply": "…"}` | `pinecall agent set --greeting '…'` · `--reply '…'` |
+| `hangup` | whether the model may end the call itself, and when, in your words | `hangup: ClassVar = {"when": "…"}` | `pinecall agent set --hangup '…'` |
+| `turn` | when the caller has finished, and may interrupt | `turn: ClassVar = {"endpointing_ms": 300}` | `pinecall agent set --endpointing-ms` |
+| `says` | how a word the voice would misread is said | `says: ClassVar = [{"word": "DKV", "spoken": "de ka uve"}]` | `pinecall lexicon add <word> --say '…'` |
+| `hears` | the words the ears must know: names, brands, the doctor's surname | `hears: ClassVar = ["Vidal", "Sanitas"]` | `pinecall lexicon hear <word> …` |
+| `memory` | what to remember about a caller across calls, and what never to | `memory: ClassVar = {"remember": […], "forget": […]}` | `pinecall memory policy --remember '…' --forget '…'` |
+| `record` | whether the call is recorded | `record = False` | `pinecall agent set --record on\|off` |
+| `knowledge` | what the agent knows by heart: a page of Markdown, read whole on every call | `@knowledge(path="knowledge.md", text=…)` | `pinecall agent knowledge edit` |
+| `docs` | the base the agent searches per turn | `docs: ClassVar = {"base": "clinica-norte", "k": 4}` | `pinecall docs push`, then `pinecall docs attach <base>` |
 
 **Neither a fact the agent remembers nor a chunk of a base ever reaches the prompt.** Both arrive
 as a tool result, in the history, where a model reads them as information rather than as an
@@ -252,4 +283,6 @@ call, and never as a refusal from a gateway:
 | `state(pii=True, visibility="public")` | `a field is pii or public, not both` |
 | two `@panel` methods | `declares two panels (Customer and Orders); a class draws one panel` |
 | a `@panel` method that does not take `(self, who, draw)` | `a panel draws with (self, who, draw)` |
-| `voice`, `llm`, `stt`, `language`, `greeting`, `hangup`, `says`, `hears`, `memory`, `record`, `knowledge`, `docs` | `` `<field>` is the world's now, not the class's: <verb> — remove it from the class`` |
+| `language: str = "es"` (annotated as state) | `` `language` is the class's, not a call's state: declare it as a class attribute, `language = …` or `language: ClassVar = …` `` |
+| `knowledge = {…}` | `` `knowledge` is the class's, not a call's state: declare it as @knowledge(path="…", text="…") `` |
+| both `@llm(…)` and an `llm` attribute | `ClinicaNorte declares both @llm(…) and a llm attribute; keep one` |

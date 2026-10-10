@@ -1,5 +1,9 @@
 """The door: what `import pinecall` gives a person writing an agent, and nothing else."""
 
+from pinecall._config import knowledge as knowledge
+from pinecall._config import llm as llm
+from pinecall._config import stt as stt
+from pinecall._config import voice as voice
 from pinecall._state import Change as Change
 from pinecall._state import state as state
 from pinecall._tools import tool as tool
@@ -53,11 +57,15 @@ __all__ = [
     "WireError",
     "__version__",
     "hold",
+    "knowledge",
+    "llm",
     "panel",
     "render",
     "show_prompt",
     "state",
+    "stt",
     "tool",
+    "voice",
 ]
 
 

@@ -1,44 +1,134 @@
-"""What a class may still say about itself, and the world's settings it is refused at creation."""
+"""What a class says of itself: its slug, and the environment it declares over the settings."""
 
 import re
+from collections.abc import Callable, Mapping
+from typing import TypeVar
 
-from pinecall._state import own_annotations
+from pinecall._state import is_class_var, own_annotations
 from pinecall.errors import DeclarationRefused
 
-# Settings that are the world's, each with the verb that sets it. Word for word the TypeScript
-# package's `THE_WORLDS` and the gem's `Config::THE_WORLDS`.
-THE_WORLDS: dict[str, str] = {
-    "voice": "pinecall agent set --voice <name>",
-    "llm": "pinecall agent set --llm <vendor/model>",
-    "stt": "pinecall agent set --stt <vendor>",
-    "language": "pinecall agent set --language <tag>",
-    "greeting": "pinecall agent set --greeting '…' (or --reply '…')",
-    "hangup": "pinecall agent set --hangup '…'",
-    "says": "pinecall lexicon add <word> --say '…'",
-    "hears": "pinecall lexicon hear <word> …",
-    "memory": "pinecall memory policy --remember '…' --forget '…'",
-    "record": "pinecall agent set --record on|off",
-    "knowledge": (
-        "pinecall agent knowledge edit — what the agent knows by heart is a setting, not a file"
-    ),
-    "docs": "pinecall docs push, then pinecall docs attach <base>",
+# The settings a class may declare; whatever it declares wins over the agent's settings. Word for
+# word the TypeScript package's `ENVIRONMENT` and the gem's `Config::ENVIRONMENT`.
+ENVIRONMENT: tuple[str, ...] = (
+    "language",
+    "voice",
+    "llm",
+    "stt",
+    "greeting",
+    "hangup",
+    "turn",
+    "says",
+    "hears",
+    "knowledge",
+    "docs",
+    "memory",
+    "record",
+)
+
+# The ones a decorator declares: the three models, and `knowledge`, which as an attribute would hide
+# the instance's `self.knowledge.search`.
+DECORATED: Mapping[str, str] = {
+    "voice": '@voice("<vendor>", "<voice id>")',
+    "llm": '@llm("<vendor>/<model>")',
+    "stt": '@stt("<vendor>/<model>")',
+    "knowledge": '@knowledge(path="…", text="…")',
 }
 
+# Where `@knowledge` keeps what it declares, beside the class's other attributes.
+KNOWLEDGE = "_pinecall_knowledge"
 
-def moved_to_the_world(field: str) -> str:
-    """The sentence a class that declares one of the world's settings is refused with."""
-    return (
-        f"`{field}` is the world's now, not the class's: {THE_WORLDS[field]}"
-        " — remove it from the class"
-    )
+_Class = TypeVar("_Class", bound=type)
 
 
-def refuse_the_worlds(cls: type) -> None:
-    """Refuse a class that sets or annotates one of the world's settings, naming the verb."""
-    written = set(vars(cls)) | set(own_annotations(cls))
-    for field in THE_WORLDS:
-        if field in written:
-            raise DeclarationRefused(moved_to_the_world(field))
+def declared_on_the_instance(field: str) -> str:
+    """The sentence a class that declares an environment field as state is refused with."""
+    way = DECORATED.get(field, f"a class attribute, `{field} = …` or `{field}: ClassVar = …`")
+    return f"`{field}` is the class's, not a call's state: declare it as {way}"
+
+
+def refuse_the_environment(cls: type) -> None:
+    """Refuse an environment field annotated as state, or written where a decorator declares it."""
+    annotated = {name for name, said in own_annotations(cls).items() if not is_class_var(said)}
+    written = set(vars(cls))
+    for field in ENVIRONMENT:
+        if field in annotated or (field == "knowledge" and field in written):
+            raise DeclarationRefused(declared_on_the_instance(field))
+
+
+def environment_of(cls: type) -> dict[str, object]:
+    """The environment the class declares, as the declaration sends it."""
+    declared: dict[str, object] = {}
+    for field in ENVIRONMENT:
+        value: object = getattr(cls, KNOWLEDGE if field == "knowledge" else field, None)
+        if value is not None:
+            declared[field] = value
+    return declared
+
+
+def voice(
+    provider: str,
+    voice_id: str,
+    *,
+    model: str | None = None,
+    builds: str | None = None,
+    options: Mapping[str, object] | None = None,
+) -> Callable[[_Class], _Class]:
+    """The voice, by its vendor and the vendor's own id for it; it wins over the agent's settings.
+
+    Args:
+        provider: The vendor that speaks, as `pinecall providers` names it.
+        voice_id: The vendor's own id for the voice.
+        model: The vendor's model, when its default is not wanted.
+        builds: A class of the vendor's LiveKit plugin other than its TTS.
+        options: That class's keyword arguments, as the plugin names them. With `builds`, they run
+            only on the org's own key for the vendor.
+    """
+    given = {"model": model, "builds": builds, "options": options}
+    return _declaring("voice", {"provider": provider, "voice_id": voice_id, **_set(given)})
+
+
+def llm(
+    model: str,
+    *,
+    temperature: float | None = None,
+    builds: str | None = None,
+    options: Mapping[str, object] | None = None,
+) -> Callable[[_Class], _Class]:
+    """The model that answers, `vendor/model` or a vendor alone; it wins over the agent's settings.
+
+    Args:
+        model: `vendor/model`, or a vendor alone to run its default model.
+        temperature: How freely the model picks its words, in its vendor's range.
+        builds: A class of the vendor's LiveKit plugin other than its LLM: `"responses.LLM"`.
+        options: That class's keyword arguments, as the plugin names them (`use_websocket`).
+            With `builds`, they run only on the org's own key for the vendor.
+    """
+    given = {"temperature": temperature, "builds": builds, "options": options}
+    return _declaring("llm", {**_model_of(model), **_set(given)})
+
+
+def stt(
+    model: str, *, builds: str | None = None, options: Mapping[str, object] | None = None
+) -> Callable[[_Class], _Class]:
+    """The ears, `vendor/model` or a vendor alone; they win over the agent's settings.
+
+    Args:
+        model: `vendor/model`, or a vendor alone to run its default model.
+        builds: A class of the vendor's LiveKit plugin other than its STT.
+        options: That class's keyword arguments, as the plugin names them. With `builds`, they run
+            only on the org's own key for the vendor.
+    """
+    return _declaring("stt", {**_model_of(model), **_set({"builds": builds, "options": options})})
+
+
+def knowledge(*, path: str, text: str) -> Callable[[_Class], _Class]:
+    """Markdown read whole on every call; it wins over the agent's settings.
+
+    Args:
+        path: The file's name, as the console shows it.
+        text: The Markdown itself.
+    """
+    return _declaring(KNOWLEDGE, {"path": path, "text": text})
 
 
 def slug_of(cls: type) -> str:
@@ -48,3 +138,27 @@ def slug_of(cls: type) -> str:
         return named
     spaced = re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", cls.__name__)
     return re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1-\2", spaced).lower()
+
+
+# Both spellings on one class are refused, as `@render` and a `render` method are: one is dead.
+def _declaring(field: str, value: Mapping[str, object]) -> Callable[[_Class], _Class]:
+    def decorate(cls: _Class) -> _Class:
+        if field in vars(cls):
+            named = "knowledge" if field == KNOWLEDGE else field
+            raise DeclarationRefused(
+                f"{cls.__name__} declares both @{named}(…) and a {named} attribute; keep one"
+            )
+        setattr(cls, field, dict(value))
+        return cls
+
+    return decorate
+
+
+# The model id keeps every slash after the vendor's: `livekit/openai/gpt-5-mini`.
+def _model_of(named: str) -> dict[str, object]:
+    provider, _, model = named.partition("/")
+    return {"provider": provider, "model": model}
+
+
+def _set(given: Mapping[str, object]) -> dict[str, object]:
+    return {name: value for name, value in given.items() if value is not None}

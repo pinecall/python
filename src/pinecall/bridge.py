@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 
 from pydantic import TypeAdapter
 
-from pinecall import _accepts, _running, _searching, _state, _tools
+from pinecall import _accepts, _config, _running, _searching, _state, _tools
 from pinecall._agent_socket import AgentSocket, Tool
 from pinecall._calls import Call
 from pinecall._config import slug_of
@@ -135,8 +135,11 @@ def mount(
 
 
 def config_of(cls: type[Agent]) -> AgentConfig:
-    """What the class declares to the gateway: its layout, what it searches, shows and accepts."""
-    declared: dict[str, object] = {"prompt": [spec.written() for spec in LAYOUT]}
+    """What the class declares: its layout, what it searches, shows and accepts, what it runs on."""
+    declared: dict[str, object] = {
+        **_config.environment_of(cls),
+        "prompt": [spec.written() for spec in LAYOUT],
+    }
     if _searching.searches(cls):
         declared["uses_knowledge"] = True
     fields = _state.visibilities_of(getattr(cls, _state.FIELDS))

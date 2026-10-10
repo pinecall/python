@@ -38,9 +38,9 @@ def test_a_class_the_gateway_would_refuse_is_refused_before_anything_is_dialled(
 ) -> None:
     file = written(tmp_path)
     file.write_text(
-        file.read_text().replace('    """Eres', '    voice = "carolina"\n    """Eres'),
+        file.read_text().replace('    """Eres', '    language: str = "es"\n    """Eres'),
         encoding="utf-8",
     )
     status, _, err = ran(["prompt", "--file", str(file), "--slug", "recepcion"])
     assert status == 2
-    assert "`voice` is the world's now" in err
+    assert "`language` is the class's, not a call's state" in err

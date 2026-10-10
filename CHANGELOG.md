@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 0.1.10 — The class declares its voice, its models and the rest, and wins (2026-10-10)
+
+- **A class declares its environment again, and it wins over the settings.** `@voice("<vendor>",
+  "<id>", model=…)`, `@llm("<vendor>/<model>", temperature=…)`, `@stt(…)` and `@knowledge(path=…,
+  text=…)`, and class attributes for `language`, `greeting`, `hangup`, `turn`, `says`, `hears`,
+  `docs`, `memory` and `record`. A field the class declares is not read from the settings, the
+  console shows it "set by the class", and `pinecall agent set` of it is refused. Needs runtime
+  0.1.42.
+- `builds=` and `options=` on the three models: a class of the vendor's plugin and its keyword
+  arguments (`@llm("openai/gpt-5.4-mini", builds="responses.LLM", options={"use_websocket": True})`),
+  only on the org's own key for the vendor. One of these annotated as state is refused at class
+  creation with how to declare it; the refusal that named a CLI verb is gone.
+
 ## 0.1.9 — The release CI refused for a format (2026-10-09)
 
 - One example file was not as `ruff format` writes it, and CI refused 0.1.7 and 0.1.8 for it, so
