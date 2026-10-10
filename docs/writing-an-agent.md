@@ -64,7 +64,7 @@ sabés")` with an instruction for the opening. The caller cannot cut it short un
 when the model may end the call, in your words, or `hangup = True` whenever it judges the call
 done. `@stt` also takes `end_of_turn=`, who says the caller's turn is over: `"stt"` the ears
 themselves (Deepgram Flux; refused for ears that cannot), `"livekit"` or `"smart-turn"` (Smart Turn
-v3), a model on the worker that runs on any key.
+v3), a model on the worker that runs on any key. Left out, the ears end the turn where they can and Smart Turn v3 does everywhere else.
 
 The three models and `knowledge` are decorators; the rest are class attributes, plain or annotated
 `ClassVar`. An attribute annotated any other way is the call's state, so one of these written that
