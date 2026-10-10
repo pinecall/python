@@ -4,8 +4,10 @@ import re
 from collections.abc import Callable, Mapping
 from typing import TypeVar
 
+from pinecall._opening import greeting_of, hangup_of
 from pinecall._state import is_class_var, own_annotations
 from pinecall.errors import DeclarationRefused
+from pinecall.wire.parts import EndOfTurn
 
 # The settings a class may declare; whatever it declares wins over the agent's settings. Word for
 # word the TypeScript package's `ENVIRONMENT` and the gem's `Config::ENVIRONMENT`.
@@ -62,6 +64,10 @@ def environment_of(cls: type) -> dict[str, object]:
         value: object = getattr(cls, KNOWLEDGE if field == "knowledge" else field, None)
         if value is not None:
             declared[field] = value
+    if "greeting" in declared:
+        declared["greeting"] = greeting_of(declared["greeting"])
+    if "hangup" in declared:
+        declared["hangup"] = hangup_of(declared["hangup"])
     return declared
 
 
@@ -108,7 +114,11 @@ def llm(
 
 
 def stt(
-    model: str, *, builds: str | None = None, options: Mapping[str, object] | None = None
+    model: str,
+    *,
+    builds: str | None = None,
+    options: Mapping[str, object] | None = None,
+    end_of_turn: EndOfTurn | None = None,
 ) -> Callable[[_Class], _Class]:
     """The ears, `vendor/model` or a vendor alone; they win over the agent's settings.
 
@@ -117,8 +127,11 @@ def stt(
         builds: A class of the vendor's LiveKit plugin other than its STT.
         options: That class's keyword arguments, as the plugin names them. With `builds`, they run
             only on the org's own key for the vendor.
+        end_of_turn: Who says the caller's turn is over: `"stt"` the ears themselves (Deepgram
+            Flux), `"livekit"` or `"smart-turn"` (Smart Turn v3), a model on the worker.
     """
-    return _declaring("stt", {**_model_of(model), **_set({"builds": builds, "options": options})})
+    given = {"builds": builds, "options": options, "end_of_turn": end_of_turn}
+    return _declaring("stt", {**_model_of(model), **_set(given)})
 
 
 def knowledge(*, path: str, text: str) -> Callable[[_Class], _Class]:

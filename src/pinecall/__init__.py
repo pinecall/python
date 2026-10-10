@@ -4,6 +4,8 @@ from pinecall._config import knowledge as knowledge
 from pinecall._config import llm as llm
 from pinecall._config import stt as stt
 from pinecall._config import voice as voice
+from pinecall._opening import improvise as improvise
+from pinecall._opening import words as words
 from pinecall._state import Change as Change
 from pinecall._state import state as state
 from pinecall._tools import tool as tool
@@ -57,6 +59,7 @@ __all__ = [
     "WireError",
     "__version__",
     "hold",
+    "improvise",
     "knowledge",
     "llm",
     "panel",
@@ -66,6 +69,7 @@ __all__ = [
     "stt",
     "tool",
     "voice",
+    "words",
 ]
 
 

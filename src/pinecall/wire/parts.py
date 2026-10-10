@@ -31,6 +31,9 @@ DevVerb: TypeAlias = Literal[
 ]
 
 # drained: the worker went down with the call on it; app_detached: the app closed mid-call.
+# Who says the caller's turn is over: the ears themselves, livekit's detector, or Smart Turn v3.
+EndOfTurn: TypeAlias = Literal["stt", "livekit", "smart-turn"]
+
 EndReason: TypeAlias = Literal[
     "caller_hung_up",
     "agent_hung_up",
@@ -229,6 +232,8 @@ class ModelConfig(WireModel):
     # keyword arguments as the plugin names them: what a class declares, over the operator's.
     builds: str | None = None
     options: JsonObject | None = None
+    # The ears' alone: who ends the caller's turn, over the operator's choice for the vendor.
+    end_of_turn: EndOfTurn | None = None
 
 
 class TurnConfig(WireModel):

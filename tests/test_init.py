@@ -28,6 +28,7 @@ THE_DOOR = [
     "WireError",
     "__version__",
     "hold",
+    "improvise",
     "knowledge",
     "llm",
     "panel",
@@ -37,6 +38,7 @@ THE_DOOR = [
     "stt",
     "tool",
     "voice",
+    "words",
 ]
 
 

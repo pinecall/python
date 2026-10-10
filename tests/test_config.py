@@ -13,13 +13,14 @@ from pinecall.bridge import config_of
 @llm(
     "openai/gpt-5.4-mini", temperature=0.3, builds="responses.LLM", options={"use_websocket": True}
 )
-@stt("deepgram")
+@stt("soniox/stt-rt-v3", end_of_turn="smart-turn")
 @knowledge(path="knowledge.md", text="# Clínica Norte")
 class Fijada(Agent):
     """Recepción que fija su voz, su modelo, sus oídos, su idioma y cómo abre."""
 
     language = "es"
-    greeting: ClassVar = {"say": "Clínica Norte, buenas."}
+    greeting = "Clínica Norte, buenas."
+    hangup = "the caller says goodbye"
     hears: ClassVar = ["Vidal", "Sanitas"]
     memory: ClassVar = {"remember": ["alergias"], "forget": ["pagos"]}
     record = False
@@ -40,7 +41,8 @@ def test_what_the_class_declares_of_its_environment_is_sent_in_the_wires_shape()
         "builds": "responses.LLM",
         "options": {"use_websocket": True},
     }
-    assert sent["stt"] == {"provider": "deepgram", "model": ""}
+    assert sent["stt"] == {"provider": "soniox", "model": "stt-rt-v3", "end_of_turn": "smart-turn"}
+    assert sent["hangup"] == {"when": "the caller says goodbye"}
     assert sent["knowledge"] == {"path": "knowledge.md", "text": "# Clínica Norte"}
     assert (sent["language"], sent["greeting"], sent["hears"]) == (
         "es",

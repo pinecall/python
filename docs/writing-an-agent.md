@@ -48,13 +48,23 @@ from pinecall import Agent, llm, stt, voice
 @llm(
     "openai/gpt-5.4-mini", temperature=0.3, builds="responses.LLM", options={"use_websocket": True}
 )
-@stt("deepgram/flux-general-multi")
+@stt("soniox/stt-rt-v3", end_of_turn="smart-turn")
 class ClinicaNorte(Agent):
     """Recepción de Clínica Norte: da, cambia y cancela turnos."""
 
     language = "es"
-    greeting: ClassVar = {"say": "Clínica Norte, buenas, ¿en qué le ayudo?"}
+    greeting = "Clínica Norte, buenas, ¿en qué le ayudo?"
+    hangup = "the caller says goodbye or needs nothing else"
 ```
+
+`greeting` is the words, said as written — instant, and no model runs — or the model's own:
+`greeting = improvise` opens on the prompt alone, `greeting = improvise("Saludá por el nombre si lo
+sabés")` with an instruction for the opening. The caller cannot cut it short unless it says so:
+`improvise("…", interruptible=True)`, or `words("…", interruptible=True)` for words. `hangup` is
+when the model may end the call, in your words, or `hangup = True` whenever it judges the call
+done. `@stt` also takes `end_of_turn=`, who says the caller's turn is over: `"stt"` the ears
+themselves (Deepgram Flux; refused for ears that cannot), `"livekit"` or `"smart-turn"` (Smart Turn
+v3), a model on the worker that runs on any key.
 
 The three models and `knowledge` are decorators; the rest are class attributes, plain or annotated
 `ClassVar`. An attribute annotated any other way is the call's state, so one of these written that
@@ -75,10 +85,10 @@ whole model: with it on the class, `--temperature`, `--llm-builds` and `--llm-op
 |---|---|---|---|
 | `voice` | the voice: its vendor and the vendor's id | `@voice("<vendor>", "<id>", model=…)` | `pinecall agent set --voice` |
 | `llm` | the model that answers, and its temperature | `@llm("<vendor>/<model>", temperature=0.3)` | `pinecall agent set --llm` |
-| `stt` | the ears | `@stt("<vendor>/<model>")` | `pinecall agent set --stt` |
+| `stt` | the ears, and who ends the caller's turn | `@stt("<vendor>/<model>", end_of_turn="smart-turn")` | `pinecall agent set --stt` · `--end-of-turn` |
 | `language` | the language the call is in | `language = "es"` | `pinecall agent set --language` |
-| `greeting` | how the call opens: the words, or what the model reads before finding its own | `greeting: ClassVar = {"say": "…"}` · `{"reply": "…"}` | `pinecall agent set --greeting '…'` · `--reply '…'` |
-| `hangup` | whether the model may end the call itself, and when, in your words | `hangup: ClassVar = {"when": "…"}` | `pinecall agent set --hangup '…'` |
+| `greeting` | how the call opens: the words, or the model's own | `greeting = "…"` · `improvise` · `improvise("…")` | `pinecall agent set --greeting '…'` · `--greeting improvise` · `--greeting improvise:'…'` |
+| `hangup` | whether the model may end the call itself, and when, in your words | `hangup = "…"` · `True` | `pinecall agent set --hangup '…'` · `--hangup any` |
 | `turn` | when the caller has finished, and may interrupt | `turn: ClassVar = {"endpointing_ms": 300}` | `pinecall agent set --endpointing-ms` |
 | `says` | how a word the voice would misread is said | `says: ClassVar = [{"word": "DKV", "spoken": "de ka uve"}]` | `pinecall lexicon add <word> --say '…'` |
 | `hears` | the words the ears must know: names, brands, the doctor's surname | `hears: ClassVar = ["Vidal", "Sanitas"]` | `pinecall lexicon hear <word> …` |

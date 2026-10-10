@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 0.1.11 — A greeting is words or improvise, a hangup is words or True, and the ears choose who ends the turn (2026-10-10)
+
+- `greeting = "…"` (said as written), `greeting = improvise` (the model opens on its prompt) and
+  `greeting = improvise("…")` (with an instruction); `interruptible=True`, or `words("…",
+  interruptible=True)`, for an opening the caller may cut short, which by default they cannot. The
+  `{"say": …}` / `{"reply": …}` dicts are gone.
+- `hangup = "…"` (when, in your words) or `hangup = True` (whenever the model judges); the
+  `{"when": …}` dict is gone.
+- `@stt(…, end_of_turn="stt" | "livekit" | "smart-turn")`: who says the caller's turn is over, as
+  @pinecall/agents 0.9.26 says it. Needs runtime 0.1.43.
+
 ## 0.1.10 — The class declares its voice, its models and the rest, and wins (2026-10-10)
 
 - **A class declares its environment again, and it wins over the settings.** `@voice("<vendor>",
