@@ -29,6 +29,7 @@ THE_DOOR = [
     "__version__",
     "hold",
     "improvise",
+    "judge",
     "knowledge",
     "llm",
     "panel",

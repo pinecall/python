@@ -51,8 +51,9 @@ EndReason: TypeAlias = Literal[
 # platform covers timeouts, errors and a drained worker.
 EndedBy: TypeAlias = Literal["caller", "agent", "supervisor", "platform"]
 
-# skipped: no model was reachable inside the call's judging budget.
-ScoreVerdict: TypeAlias = Literal["held", "broken", "deferred", "skipped"]
+# classified: a choice or a score answered; na: the question did not apply; skipped: nobody
+# asked it (no model, the ceiling reached, or the org's evals used up).
+ScoreVerdict: TypeAlias = Literal["held", "broken", "classified", "na", "deferred", "skipped"]
 
 # cold: a REFER on the caller's SIP leg. warm: the number is dialled into the room.
 TransferMode: TypeAlias = Literal["cold", "warm"]
@@ -320,6 +321,7 @@ class AgentConfig(WireModel):
     voice: VoiceConfig | None = None
     llm: ModelConfig | None = None
     stt: ModelConfig | None = None
+    judge: ModelConfig | None = None
     turn: TurnConfig | None = None
     says: list[Pronunciation] | None = None
     hears: list[str] | None = None

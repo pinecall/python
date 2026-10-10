@@ -16,6 +16,7 @@ ENVIRONMENT: tuple[str, ...] = (
     "voice",
     "llm",
     "stt",
+    "judge",
     "greeting",
     "hangup",
     "turn",
@@ -27,12 +28,13 @@ ENVIRONMENT: tuple[str, ...] = (
     "record",
 )
 
-# The ones a decorator declares: the three models, and `knowledge`, which as an attribute would hide
-# the instance's `self.knowledge.search`.
+# The ones a decorator declares: the models, the voice, and `knowledge`, which as an attribute
+# would hide the instance's `self.knowledge.search`.
 DECORATED: Mapping[str, str] = {
     "voice": '@voice("<vendor>", "<voice id>")',
     "llm": '@llm("<vendor>/<model>")',
     "stt": '@stt("<vendor>/<model>")',
+    "judge": '@judge("<vendor>/<model>")',
     "knowledge": '@knowledge(path="…", text="…")',
 }
 
@@ -132,6 +134,29 @@ def stt(
     """
     given = {"builds": builds, "options": options, "end_of_turn": end_of_turn}
     return _declaring("stt", {**_model_of(model), **_set(given)})
+
+
+def judge(
+    model: str,
+    *,
+    builds: str | None = None,
+    options: Mapping[str, object] | None = None,
+) -> Callable[[_Class], _Class]:
+    """The model the agent's calls are judged on, over the org's choice and Pinecall's.
+
+    On a key of the org's own for the vendor, a local model's server among them, its evals are
+    never billed; on a key Pinecall lends they are. The judge is asked for a forced tool call, so
+    the model must call tools.
+
+    Args:
+        model: `vendor/model`, or a vendor alone to run its default model.
+        builds: A class of the vendor's LiveKit plugin other than its LLM.
+        options: That class's keyword arguments, as the plugin names them
+            (`{"base_url": "http://gpu:8000/v1"}` for a local server). With `builds`, they run
+            only on the org's own key for the vendor.
+    """
+    given = {"builds": builds, "options": options}
+    return _declaring("judge", {**_model_of(model), **_set(given)})
 
 
 def knowledge(*, path: str, text: str) -> Callable[[_Class], _Class]:

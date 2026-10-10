@@ -4,7 +4,7 @@ from typing import ClassVar
 
 import pytest
 
-from pinecall import Agent, DeclarationRefused, knowledge, llm, stt, voice
+from pinecall import Agent, DeclarationRefused, judge, knowledge, llm, stt, voice
 from pinecall._config import declared_on_the_instance, environment_of, slug_of
 from pinecall.bridge import config_of
 
@@ -14,6 +14,7 @@ from pinecall.bridge import config_of
     "openai/gpt-5.4-mini", temperature=0.3, builds="responses.LLM", options={"use_websocket": True}
 )
 @stt("soniox/stt-rt-v3", end_of_turn="smart-turn")
+@judge("openai/qwen3-32b", options={"base_url": "http://gpu:8000/v1"})
 @knowledge(path="knowledge.md", text="# Clínica Norte")
 class Fijada(Agent):
     """Recepción que fija su voz, su modelo, sus oídos, su idioma y cómo abre."""
@@ -42,6 +43,11 @@ def test_what_the_class_declares_of_its_environment_is_sent_in_the_wires_shape()
         "options": {"use_websocket": True},
     }
     assert sent["stt"] == {"provider": "soniox", "model": "stt-rt-v3", "end_of_turn": "smart-turn"}
+    assert sent["judge"] == {
+        "provider": "openai",
+        "model": "qwen3-32b",
+        "options": {"base_url": "http://gpu:8000/v1"},
+    }
     assert sent["hangup"] == {"when": "the caller says goodbye"}
     assert sent["knowledge"] == {"path": "knowledge.md", "text": "# Clínica Norte"}
     assert (sent["language"], sent["greeting"], sent["hears"]) == (

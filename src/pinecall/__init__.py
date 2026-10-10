@@ -1,5 +1,6 @@
 """The door: what `import pinecall` gives a person writing an agent, and nothing else."""
 
+from pinecall._config import judge as judge
 from pinecall._config import knowledge as knowledge
 from pinecall._config import llm as llm
 from pinecall._config import stt as stt
@@ -60,6 +61,7 @@ __all__ = [
     "__version__",
     "hold",
     "improvise",
+    "judge",
     "knowledge",
     "llm",
     "panel",

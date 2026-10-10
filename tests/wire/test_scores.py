@@ -3,6 +3,7 @@
 import pytest
 
 from pinecall.errors import WireError
+from pinecall.wire._names import JsonObject
 from pinecall.wire.events import EVENTS, event_of
 from pinecall.wire.scores import CallScore, Judgment
 from tests.wire.golden import golden_entries
@@ -29,3 +30,42 @@ def test_a_score_whose_judges_cost_was_said_in_euros_reads_as_the_same_dollars()
     score = CallScore.read({"judges": [], "judge_calls": 1, "judge_cost_eur": 0.01}, "call.score")
     assert score.judge_cost_usd == 0.01
     assert score.written() == {"judges": [], "judge_calls": 1, "judge_cost_usd": 0.01}
+
+
+def test_a_score_reads_na_a_classification_its_evals_and_whose_key_judged() -> None:
+    evidence: JsonObject = {"seqs": [4]}
+    data: JsonObject = {
+        "judges": [
+            {
+                "name": "identified",
+                "verdict": "na",
+                "criteria": "q",
+                "reason": "n/a",
+                "evidence": evidence,
+            },
+            {
+                "name": "sentiment",
+                "verdict": "classified",
+                "criteria": "q",
+                "reason": "calm",
+                "evidence": evidence,
+                "score": 4,
+            },
+            {
+                "name": "intent",
+                "verdict": "classified",
+                "criteria": "q",
+                "reason": "booking",
+                "evidence": evidence,
+                "choice": "book",
+            },
+        ],
+        "judge_calls": 3,
+        "evals": 2,
+        "own_key": True,
+    }
+    score = CallScore.read(data, "call.score")
+    assert [judge.verdict for judge in score.judges] == ["na", "classified", "classified"]
+    assert (score.judges[1].score, score.judges[2].choice) == (4, "book")
+    assert (score.evals, score.own_key) == (2, True)
+    assert score.written() == data

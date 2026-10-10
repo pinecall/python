@@ -1,6 +1,7 @@
-"""Tests for a call's own events: a key Python cannot spell, and the state a call opens in."""
+"""Tests for a call's own events: a key Python cannot spell, the state it opens in, its summary."""
 
-from pinecall.wire.events_call import CallStarted
+from pinecall.wire._names import JsonObject
+from pinecall.wire.events_call import CallStarted, CallSummary
 
 
 def test_an_event_goes_on_the_wire_by_its_wire_keys_and_absent_fields_stay_absent() -> None:
@@ -28,3 +29,18 @@ def test_a_call_started_carries_the_state_it_opens_in_only_when_one_was_asked_fo
     assert golden.written()["state"] == {"patient_name": "Ana"}
     person = CallStarted.read({**opened, "caller": None, "started_at": 1.0}, "call.started")
     assert "state" not in person.written()
+
+
+def test_a_summary_says_a_simulated_caller_played_the_call() -> None:
+    data: JsonObject = {
+        "reason": "caller_hung_up",
+        "outcome": "booked",
+        "duration_s": 40.0,
+        "turns": 6,
+        "usage": [],
+        "cost": {"usd": 0.01, "rows": [], "unpriced": []},
+        "simulated": True,
+    }
+    summary = CallSummary.read(data, "call.summary")
+    assert summary.simulated is True
+    assert summary.written() == data
